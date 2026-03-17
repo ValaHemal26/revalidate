@@ -5,8 +5,6 @@ const session = require("express-session");
 
 const app = express();
 
-/* ================= MIDDLEWARE ================= */
-
 app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
@@ -20,13 +18,10 @@ app.use(session({
   saveUninitialized: true,
 }));
 
-/* ================= DB CONNECT ================= */
 
 mongoose.connect("mongodb://127.0.0.1:27017/bus-reservation")
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log(err));
-
-/* ================= SCHEMAS ================= */
 
 const adminSchema = new mongoose.Schema({
   username: String,
@@ -39,15 +34,13 @@ const busSchema = new mongoose.Schema({
   from: String,
   to: String,
 
-  departureTime: String, // "08:30 AM"
-  arrivalTime: String,   // "02:00 PM"
+  departureTime: String, 
+  arrivalTime: String,   
 
-  journeyDate: String,   // "2026-03-20"
+  journeyDate: String, 
 
   price: Number,
   seats: Number,
-
-  // 🛣 ROUTES (stops)
   stops: [
     {
       city: String,
@@ -78,10 +71,6 @@ const Admin = mongoose.model("Admin", adminSchema);
 const Bus = mongoose.model("Bus", busSchema);
 const Booking = mongoose.model("Booking", bookingSchema);
 
-/* ======================================================
-   🔐 ADMIN AUTH (DB BASED)
-====================================================== */
-
 
 
 app.post("/admin/login", async (req, res) => {
@@ -103,13 +92,11 @@ app.post("/admin/login", async (req, res) => {
 });
 
 
-/* 🚪 LOGOUT */
 app.get("/admin/logout", (req, res) => {
   req.session.destroy();
   res.json({ message: "Logged out" });
 });
 
-/* 🔒 CHECK AUTH */
 const isAdminAuth = (req, res, next) => {
   if (!req.session.adminId) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -117,11 +104,6 @@ const isAdminAuth = (req, res, next) => {
   next();
 };
 
-/* ======================================================
-   🛠 ADMIN APIs (PROTECTED)
-====================================================== */
-
-/* ➕ ADD BUS */
 app.post("/admin/bus", isAdminAuth, async (req, res) => {
   try {
     const bus = new Bus(req.body);
@@ -131,7 +113,7 @@ app.post("/admin/bus", isAdminAuth, async (req, res) => {
     res.status(500).json({ message: "Add failed" });
   }
 });
-// GET SINGLE BUS
+
 app.get("/admin/bus/:id", async (req, res) => {
   const bus = await Bus.findById(req.params.id);
   console.log(bus);
@@ -141,13 +123,12 @@ app.get("/admin/bus/:id", async (req, res) => {
 
   res.json(bus);
 });
-/* 📋 GET ALL BUSES */
+
 app.get("/admin/buses", isAdminAuth, async (req, res) => {
   const buses = await Bus.find();
   res.json(buses);
 });
 
-/* ✏️ UPDATE BUS */
 app.put("/admin/bus/:id", isAdminAuth, async (req, res) => {
   const bus = await Bus.findByIdAndUpdate(req.params.id, req.body, { new: true });
 
@@ -158,7 +139,6 @@ app.put("/admin/bus/:id", isAdminAuth, async (req, res) => {
   res.json({ message: "Updated", bus });
 });
 
-/* 🗑 DELETE BUS */
 app.delete("/admin/bus/:id", isAdminAuth, async (req, res) => {
   const bus = await Bus.findByIdAndDelete(req.params.id);
 
@@ -169,17 +149,11 @@ app.delete("/admin/bus/:id", isAdminAuth, async (req, res) => {
   res.json({ message: "Deleted" });
 });
 
-/* 📊 VIEW BOOKINGS */
 app.get("/admin/bookings", isAdminAuth, async (req, res) => {
   const bookings = await Booking.find();
   res.json(bookings);
 });
 
-/* ======================================================
-   👤 USER APIs
-====================================================== */
-
-/* 🔍 SEARCH BUS */
 app.get("/buses/search", async (req, res) => {
   const { from, to } = req.query;
 
@@ -197,7 +171,6 @@ app.get("/buses/search", async (req, res) => {
   res.json(buses);
 });
 
-/* 🎫 BOOK */
 app.post("/book", async (req, res) => {
   const { passengerName, busId } = req.body;
 
@@ -230,7 +203,6 @@ app.post("/book", async (req, res) => {
   res.json({ message: "Booked", ticketId });
 });
 
-/* 🎯 TRACK */
 app.get("/ticket/:id", async (req, res) => {
   const ticket = await Booking.findOne({ ticketId: req.params.id });
 
@@ -241,7 +213,6 @@ app.get("/ticket/:id", async (req, res) => {
   res.json(ticket);
 });
 
-/* ❌ CANCEL */
 app.post("/cancel/:id", async (req, res) => {
   const ticket = await Booking.findOne({ ticketId: req.params.id });
 
@@ -264,8 +235,6 @@ app.post("/cancel/:id", async (req, res) => {
 
   res.json({ message: "Cancelled" });
 });
-
-/* ====================================================== */
 
 app.listen(5000, () => {
   console.log("🚀 Server running on http://localhost:5000");
