@@ -1,0 +1,53 @@
+const mongoose = require("mongoose");
+
+const busSchema = new mongoose.Schema({
+  busName: {
+    type: String,
+    required: true
+  },
+  busNumber: {
+    type: String,
+    required: true,
+    unique: true
+  },
+
+  routeStops: {
+    type: [String],
+    required: true,
+    validate: [arr => arr.length >= 2, "At least 2 stops required"]
+  },
+
+  departureTime: {
+    type: String,
+    required: true
+  },
+  arrivalTime: {
+    type: String,
+    required: true
+  },
+
+  totalSeats: {
+    type: Number,
+    required: true,
+    min: 1
+  },
+
+  basePrice: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+
+  scheduleType: {
+    type: String,
+    enum: ["Daily", "SpecificDays", "SpecificDates"],
+    required: true
+  },
+
+  daysOfWeek: [String],       // ["Monday", "Saturday"]
+  specificDates: [String],    // ["2026-03-20"]
+
+  disabledDates: [String]     // Admin can disable bus on date
+}, { timestamps: true });
+
+module.exports = mongoose.model("Bus", busSchema);
