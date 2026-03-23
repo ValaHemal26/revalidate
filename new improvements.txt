@@ -1,0 +1,5 @@
+Step 1: User selects seats and fills details (name, email, phone, route, date).
+Step 2: Click “Next” → Show summary page with all booking details (route, date, seats, price).
+Step 3: User clicks “Confirm Booking” → System generates OTP, sends to user’s email.
+Step 4: User enters OTP → If valid, booking is confirmed. Show booking number, seat numbers, route, date, time, etc.
+Step 5: Optionally, send confirmation email with all booking details.
