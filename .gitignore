@@ -1,0 +1,15 @@
+# Ignore all node_modules folders
+**/node_modules
+
+# Ignore all Next.js build folders
+**/.next
+
+# Ignore Next.js output folder (optional)
+**/out
+
+# Optional: log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
