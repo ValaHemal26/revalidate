@@ -26,9 +26,15 @@ export default function BusesPage() {
       .catch((err: any) => setError(err.message));
   }, []);
 
-  const allStops = Array.from(
-    new Set(allBuses.flatMap((b) => b.routeStops))
-  );
+ const allStops = [];
+
+  allBuses.forEach((bus) => {
+    bus.routeStops.forEach((stop) => {
+      if (!allStops.includes(stop)) {
+        allStops.push(stop);
+      }
+    });
+  });
 
   const filteredSourceStops = allStops.filter((stop) =>
     stop.toLowerCase().includes(source.toLowerCase())

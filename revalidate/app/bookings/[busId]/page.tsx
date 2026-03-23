@@ -1,11 +1,12 @@
 "use client";
-
+import "../../assets/css/style.css";
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter,useParams  } from "next/navigation";
-import { getBus, bookSeat } from "../../utils/api";
+import { useSearchParams,useParams  } from "next/navigation";
+import { getBus } from "../../utils/api";
 import BookingForm from "../../components/BookingForm";
+import ErrorMessage from "../../components/ErrorMessage";
+
 export default function BookingPage() {
-  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const date = searchParams.get("date") || "";
@@ -16,10 +17,8 @@ export default function BookingPage() {
   const [bus, setBus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
-  const [startStop, setStartStop] = useState("");
-  const [endStop, setEndStop] = useState("");
-  const [price, setPrice] = useState(0);
+ 
+  if(!source || !destination || !date) return <ErrorMessage message="Please All this fields: Travel Date,Source,Destination" />;
 
   useEffect(() => {
     async function fetchBus () {
@@ -34,46 +33,14 @@ export default function BookingPage() {
     };
 
     if (busId) {
-      console.log(busId);
       fetchBus();
     }
   }, [busId]);
 
-  const handleSeatToggle = (seat: number) => {
-    if (selectedSeats.includes(seat)) {
-      setSelectedSeats(selectedSeats.filter((s) => s !== seat));
-    } else {
-      setSelectedSeats([...selectedSeats, seat]);
-    }
-  };
-
-  const handleBooking = async () => {
-    if (!startStop || !endStop || selectedSeats.length === 0) {
-      setError("Please select start & end stops and at least one seat");
-      return;
-    }
-
-    try {
-      await bookSeat({
-        busId,
-        travelDate: date,
-        startStop,
-        endStop,
-        seatNumbers: selectedSeats,
-      });
-      alert("Booking successful!");
-      router.push("/");
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
+ 
   if (loading) return <p>Loading bus info...</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  if (error) return  <ErrorMessage message={error} />;
   if (!bus) return null;
-
-  const totalSeats = bus.totalSeats;
-  const seatNumbers = Array.from({ length: totalSeats }, (_, i) => i + 1);
 
   return (
     <>
@@ -82,9 +49,7 @@ export default function BookingPage() {
         <p>
           Route: {bus.routeStops.join(" → ")} | Date: {date}
         </p>
-
-     
-         <BookingForm bus={bus} date={date} source={source} destination={destination}/>
+        <BookingForm bus={bus} date={date} source={source} destination={destination}/>
       </div>
      
     </>

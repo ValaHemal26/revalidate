@@ -14,7 +14,6 @@ export default function BookingForm({
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [startStop] = useState(source);
   const [endStop] = useState(destination);
-  const [travelDate, setTravelDate] = useState(date);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,7 +40,7 @@ export default function BookingForm({
       return setError("Fill all user details");
     }
 
-    if (!startStop || !endStop || !travelDate) {
+    if (!startStop || !endStop || !date) {
       return setError("Invalid route or date");
     }
 
@@ -51,7 +50,7 @@ export default function BookingForm({
 
     try {
       for (const seatNumber of selectedSeats) {
-        await bookSeat({
+        const res = await bookSeat({
           name,
           email,
           phone,
@@ -59,14 +58,20 @@ export default function BookingForm({
           startStop,
           endStop,
           seatNumber,
-          travelDate,
+          date,
         });
+       
+        if (!res.success) {
+          setError(res.data.message || "Booking failed");
+          setSuccess("");
+          return;
+        }
       }
-
       setSuccess("Booking successful!");
       setError("");
+      
     } catch (err: any) {
-      setError(err.message);
+      setError(err.Error)
     }
   };
 
@@ -79,16 +84,9 @@ export default function BookingForm({
         <p>
           <strong>{startStop}</strong> → <strong>{endStop}</strong>
         </p>
+        <span>{date}</span>
       </div>
-
-   
-      <input
-        type="date"
-        value={travelDate}
-        onChange={(e) => setTravelDate(e.target.value)}
-      />
-
-    
+  
       <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
       <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <input placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />

@@ -29,15 +29,16 @@ app.post("/bookSeat", async (req, res) => {
       startStop,
       endStop,
       seatNumber,
-      travelDate
+      date
     } = req.body;
 
     
     if (
       !name || !email || !phone ||
       !busId || !startStop || !endStop ||
-      !seatNumber || !travelDate
+      !seatNumber || !date
     ) {
+      console.log(req.body);
       return res.status(400).json({ message: "All fields are required" });
     }
 
@@ -62,10 +63,10 @@ app.post("/bookSeat", async (req, res) => {
     }
 
 
-    const selectedDate = new Date(travelDate);
+    const selectedDate = new Date(date);
     const dayName = selectedDate.toLocaleDateString("en-US", { weekday: "long" });
 
-    if (bus.disabledDates.includes(travelDate)) {
+    if (bus.disabledDates.includes(date)) {
       return res.status(400).json({
         message: "Bus not available on this date"
       });
@@ -80,7 +81,7 @@ app.post("/bookSeat", async (req, res) => {
     }
 
     if (bus.scheduleType === "SpecificDates") {
-      if (!bus.specificDates.includes(travelDate)) {
+      if (!bus.specificDates.includes(date)) {
         return res.status(400).json({
           message: "Bus not scheduled on this date"
         });
@@ -96,7 +97,7 @@ app.post("/bookSeat", async (req, res) => {
 
     const existingBookings = await Booking.find({
       busId,
-      travelDate,
+      date,
       seatNumber,
       status: "Booked"
     });
@@ -132,7 +133,7 @@ app.post("/bookSeat", async (req, res) => {
       startStop,
       endStop,
       seatNumber,
-      travelDate,
+      date,
       price
     });
 
