@@ -2,131 +2,154 @@
 
 import { useEffect, useState } from "react";
 import { fetchBuses } from "../utils/api";
-import { useRouter } from "next/navigation";
 import BusCard from "../components/BusCard";
 
 export default function BusesPage() {
-  const router = useRouter();
-  const [buses, setBuses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [allBuses, setAllBuses] = useState<any[]>([]);
+  const [filteredBuses, setFilteredBuses] = useState<any[]>([]);
+
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState("");
-  const [filteredSources, setFilteredSources] = useState<string[]>([]);
-  const [filteredDestinations, setFilteredDestinations] = useState<string[]>([]);
+
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const [showSource, setShowSource] = useState(false);
+  const [showDestination, setShowDestination] = useState(false);
 
   useEffect(() => {
     fetchBuses()
-      .then((data) =>{  setBuses(data); })
-      .catch((err: any) => setError(err.message))
-      .finally(() => setLoading(false));
+      .then((data) => setAllBuses(data))
+      .catch((err: any) => setError(err.message));
   }, []);
 
- async function handleSearch ()  {
-  try {
+  const allStops = Array.from(
+    new Set(allBuses.flatMap((b) => b.routeStops))
+  );
+
+  const filteredSourceStops = allStops.filter((stop) =>
+    stop.toLowerCase().includes(source.toLowerCase())
+  );
+
+  const filteredDestinationStops = allStops.filter((stop) =>
+    stop.toLowerCase().includes(destination.toLowerCase())
+  );
+
+  function handleSearch() {
     if (!source || !destination || !date) {
-      setError("All fields are required");
+      setError("All fields required");
       return;
     }
 
     setError("");
     setLoading(true);
 
-    const data = await fetchBuses({ source, destination, date });
+    const result = allBuses.filter((bus) => {
+      return (
+        bus.routeStops.includes(source) &&
+        bus.routeStops.includes(destination)
+      );
+    });
 
-    setBuses(data); 
-
-  } catch (err: any) {
-    setError(err.message);
-  } finally {
+    setFilteredBuses(result);
+    setHasSearched(true);
     setLoading(false);
   }
-}
 
-  useEffect(() => {
-    if (source) {
-      const matches = buses
-        .flatMap((b) => b.routeStops)
-        .filter((stop, idx, arr) => arr.indexOf(stop) === idx)
-        .filter((stop) => stop.toLowerCase().includes(source.toLowerCase()));
-      setFilteredSources(matches.length ? matches : ["No source found"]);
-      
-    } else {
-      setFilteredSources([]);
-    }
-  }, [source, buses]);
-
-  // Autocomplete for destination
-  useEffect(() => {
-    if (destination) {
-      const matches = buses
-        .flatMap((b) => b.routeStops)
-        .filter((stop, idx, arr) => arr.indexOf(stop) === idx)
-        .filter((stop) => stop.toLowerCase().includes(destination.toLowerCase()));
-      setFilteredDestinations(matches.length ? matches : ["No destination found"]);
-    } else {
-      setFilteredDestinations([]);
-    }
-  }, [destination, buses]);
-  console.log(buses);
   return (
     <div className="search-box">
       <h2>Search Buses</h2>
-      {error && <div className="error-box">{error}</div>}
 
-      <div style={{ position: "relative" }}>
+      {error && <p className="error">{error}</p>}
+
+      <div className="dropdown">
         <input
           placeholder="Source"
           value={source}
-          onChange={(e) => setSource(e.target.value)}
+          onChange={(e) => {
+            setSource(e.target.value);
+            setShowSource(true);
+          }}
+          onFocus={() => setShowSource(true)}
         />
-        {filteredSources.length > 0 && (
-          <ul className="autocomplete-list">
-            {filteredSources.map((item, i) => (
-              <li key={i} onClick={() =>  {
-                  if (item !== "No source found") {
-                    setSource(item);
-                    setFilteredSources([]); 
-                  }
-                }}>
-                {item}
-              </li>
-            ))}
-          </ul>
+
+        {showSource && source && (
+          <div className="dropdown-menu">
+            {filteredSourceStops.length ? (
+              filteredSourceStops.map((stop, i) => (
+                <div
+                  key={i}
+                  className="item"
+                  onClick={() => {
+                    setSource(stop);
+                    setShowSource(false);
+                  }}
+                >
+                  {stop}
+                </div>
+              ))
+            ) : (
+              <div className="item">No result</div>
+            )}
+          </div>
         )}
       </div>
 
-      <div style={{ position: "relative" }}>
+      <div className="dropdown">
         <input
           placeholder="Destination"
           value={destination}
-          onChange={(e) => setDestination(e.target.value)}
+          onChange={(e) => {
+            setDestination(e.target.value);
+            setShowDestination(true);
+          }}
+          onFocus={() => setShowDestination(true)}
         />
-        {filteredDestinations.length > 0 && (
-          <ul className="autocomplete-list">
-            {filteredDestinations.map((item, i) => (
-              <li key={i} onClick={() =>  {
-                  if (item !== "No source found") {
-                    setDestination(item);
-                    setFilteredDestinations([]); 
-                  }
-                }}>
-                {item}
-              </li>
-            ))}
-          </ul>
+
+        {showDestination && destination && (
+          <div className="dropdown-menu">
+            {filteredDestinationStops.length ? (
+              filteredDestinationStops.map((stop, i) => (
+                <div
+                  key={i}
+                  className="item"
+                  onClick={() => {
+                    setDestination(stop);
+                    setShowDestination(false);
+                  }}
+                >
+                  {stop}
+                </div>
+              ))
+            ) : (
+              <div className="item">No result</div>
+            )}
+          </div>
         )}
       </div>
 
-      <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      <button onClick={handleSearch}>Search Buses</button>
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+      />
 
-      {loading && <p>Loading buses...</p>}
-      {
-        !loading && buses &&
-        <BusCard bus={buses} date={date} />
-      }
+      <button onClick={handleSearch}>Search</button>
+
+      {hasSearched && (
+        <div className="summary">
+          {source} → {destination} | {date}
+        </div>
+      )}
+
+      {loading && <p>Loading...</p>}
+
+      {!loading && hasSearched && (
+        <BusCard bus={filteredBuses} date={date} destination={destination} source={source}  />
+      )}
     </div>
   );
 }

@@ -189,26 +189,7 @@
 .search-bus-btn:hover {
   background: #1e40af;
 }
-.autocomplete-list {
-  position: absolute;
-  top: 38px;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #ccc;
-  max-height: 150px;
-  overflow-y: auto;
-  z-index: 10;
-}
 
-.autocomplete-list li {
-  padding: 8px;
-  cursor: pointer;
-}
-
-.autocomplete-list li:hover {
-  background: #f0f0f0;
-}
 .booking-page {
   width: 90%;
   max-width: 800px;
@@ -258,4 +239,91 @@ button {
 }
 button:hover {
   background: #1e40af;
+}
+.dropdown {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.dropdown-menu {
+  position: absolute;
+  width: 100%;
+  background: white;
+  border: 1px solid #ddd;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.item {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: #0070f3;
+  color: white;
+}
+
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.search-summary {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.bus-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 15px;
+}
+
+.bus-card {
+  border: 1px solid #eee;
+  padding: 15px;
+  border-radius: 10px;
+  background: white;
+  transition: 0.2s;
+}
+
+.bus-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.bus-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.bus-route {
+  margin: 10px 0;
+  font-weight: 500;
+}
+
+.bus-time {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.book-btn {
+  margin-top: 10px;
+  width: 100%;
+  background: #0070f3;
+  color: white;
+  padding: 10px;
+  border-radius: 6px;
+}
+.route-box {
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  text-align: center;
 }

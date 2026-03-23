@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter,useParams  } from "next/navigation";
 import { getBus, bookSeat } from "../../utils/api";
-import BookingForm from "@/app/components/BookingForm";
+import BookingForm from "../../components/BookingForm";
 export default function BookingPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const date = searchParams.get("date") || "";
-
+  const source = searchParams.get("source") || "";
+  const destination = searchParams.get("destination") || "";
   const {busId} = params;
   
   const [bus, setBus] = useState<any>(null);
@@ -83,7 +84,7 @@ export default function BookingPage() {
         </p>
 
      
-         <BookingForm bus={bus} date={date} />
+         <BookingForm bus={bus} date={date} source={source} destination={destination}/>
       </div>
      
     </>

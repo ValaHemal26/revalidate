@@ -20,8 +20,8 @@ export default function AddBus() {
     intermediateStops: "",
     departureTime: "",
     arrivalTime: "",
-    totalSeats: 40,
-    basePrice: 500,
+    totalSeats: 0,
+    basePrice: 0,
     scheduleType: "Daily",
     daysOfWeek: [],
     specificDates: [],
@@ -33,7 +33,6 @@ export default function AddBus() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // ✅ Multi Day Select
   const handleDaySelect = (day: string) => {
     let updated = [...form.daysOfWeek];
 
@@ -46,7 +45,6 @@ export default function AddBus() {
     setForm({ ...form, daysOfWeek: updated });
   };
 
-  // ✅ Multiple Date Picker
   const handleDateAdd = (e: any) => {
     const value = e.target.value;
     if (!value) return;
@@ -95,7 +93,7 @@ export default function AddBus() {
       <h2>Add New Bus</h2>
       {error && <p className="error">{error}</p>}
 
-      {/* BASIC INFO */}
+    
       <div className="grid-2">
         <div className="form-group">
           <label>Bus Name</label>
