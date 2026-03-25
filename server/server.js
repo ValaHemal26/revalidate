@@ -233,7 +233,7 @@ app.get("/bus/:id", async (req, res) => {
     });
   }
 });
-
+const otpStore = {};
 app.post("/send-otp", async (req, res) => {
   const { email } = req.body;
 

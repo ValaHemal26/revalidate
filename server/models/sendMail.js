@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
 dotenv.config();
 const transporter = nodemailer.createTransport({
-  service: "smtp.",
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -10,6 +10,7 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendOTP (to, otp) {
+    console.log(to);
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to,
