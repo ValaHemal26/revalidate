@@ -16,6 +16,8 @@ export default function AdminLogin() {
     try {
       setError("");
       const res = await adminLogin(email, password);
+      
+      Cookies.set("token",res.token);
       Cookies.set("admin", JSON.stringify(res.admin));
       router.push("/admin/dashboard");
       router.refresh();

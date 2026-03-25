@@ -3,28 +3,32 @@
 import { useEffect, useState } from "react";
 import { fetchBookings, cancelBooking } from "../../admin/utils/api";
 import "../../assets/css/admin.css";
+import {GetAuthCookie} from "../utils/Functions";
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [error, setError] = useState("");
-
-  const loadBookings = () => {
-    fetchBookings()
-      .then(setBookings)
+  
+  const token = GetAuthCookie();
+  function loadBookings () {
+    fetchBookings(token)
+      .then(setBookings)  
       .catch((err) => setError(err.message));
-  };
+  }
 
-  useEffect(() => { loadBookings(); }, []);
+  useEffect(() => { 
+    loadBookings();
+  }, []);
 
-  const handleCancel = async (id: string) => {
+  async function handleCancel  (id: string)  {
     if (!confirm("Are you sure to cancel this booking?")) return;
     try {
-      await cancelBooking(id);
+      await cancelBooking(id,token);
       loadBookings();
     } catch (err: any) {
       setError(err.message);
     }
-  };
+  }
 
   return (
     <div className="admin-dashboard-container">

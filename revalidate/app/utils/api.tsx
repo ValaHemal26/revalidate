@@ -2,7 +2,7 @@ export const API_URL = "http://localhost:5000";
 
 export async function fetchBuses() {
   try {
-    const res = await fetch(API_URL + "/admin/buses");
+    const res = await fetch(API_URL + "/buses");
     if (!res.ok) throw new Error("Failed to fetch buses");
     return await res.json();
   } catch (err: any) {

@@ -18,6 +18,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
  
+  if(!busId) return  <ErrorMessage message="Please Select Routes" />
   if(!source || !destination || !date) return <ErrorMessage message="Please All this fields: Travel Date,Source,Destination" />;
 
   useEffect(() => {

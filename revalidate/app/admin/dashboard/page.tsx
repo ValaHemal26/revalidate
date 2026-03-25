@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { fetchDashboard } from "../../admin/utils/api";
 import Link from "next/link";
 import "../../assets/css/admin.css";
+import { GetAuthCookie } from "../utils/Functions";
+
 
 export default function Dashboard() {
   const [stats, setStats] = useState<any>({});
   const [error, setError] = useState("");
-
+  const token = GetAuthCookie();
   useEffect(() => {
-    fetchDashboard()
+    fetchDashboard({token})
       .then(setStats)
       .catch((err) => setError(err.message));
   }, []);

@@ -4,9 +4,13 @@ const  cors = require( "cors");
 const Bus = require( "./models/bus");
 const Booking = require("./models/booking");
 const Admin = require("./models/admin");
-
+const jwt = require("jsonwebtoken");
 const app = express();
+const dotenv = require("dotenv");
+const sendOTP = require("./models/sendMail");
+const verifyAdminToken = require("./models/middleware");
 
+dotenv.config();
 app.use(cors());
 app.use(express.json());
 
@@ -18,7 +22,19 @@ mongoose.connect("mongodb://127.0.0.1:27017/busBooking")
   .catch(err => console.log(err));
 
 /* End User API */
+app.get("/buses", async (req, res) => {
+  try {
+    const buses = await Bus.find().sort({ createdAt: -1 });
 
+    res.json(buses);
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch buses",
+      error: error.message
+    });
+  }
+});
 app.post("/bookSeat", async (req, res) => {
   try {
     const {
@@ -139,7 +155,6 @@ app.post("/bookSeat", async (req, res) => {
 
     await booking.save();
 
-
     res.status(201).json({
       message: "Booking successful",
       booking
@@ -200,6 +215,7 @@ app.get("/seatAvailability", async (req, res) => {
     });
   }
 });
+
 app.get("/bus/:id", async (req, res) => {
   try {
     const bus = await Bus.findById(req.params.id);
@@ -217,9 +233,54 @@ app.get("/bus/:id", async (req, res) => {
     });
   }
 });
+
+app.post("/send-otp", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email required" });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  otpStore[email] = {
+    otp,
+    expiresAt: Date.now() + 5 * 60 * 1000,
+  };
+
+  try {
+    await sendOTP(email, otp);
+
+    res.json({ success: true, message: "OTP sent to email" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+});
+
+app.post("/verify-otp", (req, res) => {
+  const { email, otp } = req.body;
+
+  const record = otpStore[email];
+
+  if (!record) {
+    return res.status(400).json({ message: "OTP not found" });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    return res.status(400).json({ message: "OTP expired" });
+  }
+
+  if (record.otp !== otp) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  delete otpStore[email];
+
+  res.json({ success: true });
+});
 /* Admin Side API  */
 
-app.post("/admin/login", async (req, res) => {
+app.post("/admin/login", verifyAdminToken,async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -232,15 +293,18 @@ app.post("/admin/login", async (req, res) => {
     if (!admin) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
-
-    res.json({ message: "Login successful", admin });
+    
+    const token = jwt.sign({ userId: admin._id }, process.env.JWT_SECRET_KEY, {
+      expiresIn: '1h',
+    });
+    res.json({ message: "Login successful", admin,token   });
 
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
-app.post("/addBus", async (req, res) => {
+app.post("/addBus", verifyAdminToken, async (req, res) => {
   try {
     const data = req.body;
 
@@ -265,7 +329,7 @@ app.post("/addBus", async (req, res) => {
   }
 });
 
-app.put("/editBus/:id", async (req, res) => {
+app.put("/editBus/:id",verifyAdminToken, async (req, res) => {
   try {
     const bus = await Bus.findByIdAndUpdate(
       req.params.id,
@@ -290,7 +354,7 @@ app.put("/editBus/:id", async (req, res) => {
   }
 });
 
-app.delete("/deleteBus/:id", async (req, res) => {
+app.delete("/deleteBus/:id",verifyAdminToken, async (req, res) => {
   try {
     const bus = await Bus.findByIdAndDelete(req.params.id);
 
@@ -308,7 +372,7 @@ app.delete("/deleteBus/:id", async (req, res) => {
   }
 });
 
-app.get("/admin/buses", async (req, res) => {
+app.get("/admin/buses",verifyAdminToken, async (req, res) => {
   try {
     const buses = await Bus.find().sort({ createdAt: -1 });
 
@@ -322,7 +386,7 @@ app.get("/admin/buses", async (req, res) => {
   }
 });
 
-app.get("/admin/dashboard", async (req, res) => {
+app.get("/admin/dashboard",verifyAdminToken, async (req, res) => {
   try {
     const totalBuses = await Bus.countDocuments();
     const totalBookings = await Booking.countDocuments();
@@ -355,18 +419,10 @@ app.get("/admin/dashboard", async (req, res) => {
   }
 });
 
-app.get("/admin/bookings", async (req, res) => {
+app.get("/admin/bookings",verifyAdminToken, async (req, res) => {
   try {
-    const { busId, date } = req.query;
-
-    let filter = {};
-
-    if (busId) filter.busId = busId;
-    if (date) filter.travelDate = date;
-
-    const bookings = await Booking.find(filter)
-      .populate("busId")
-      .sort({ createdAt: -1 });
+    
+    const bookings = await Booking.find().sort({ createdAt: -1 });
 
     res.json(bookings);
 
@@ -378,7 +434,7 @@ app.get("/admin/bookings", async (req, res) => {
   }
 });
 
-app.put("/admin/cancelBooking/:id", async (req, res) => {
+app.put("/admin/cancelBooking/:id",verifyAdminToken, async (req, res) => {
   try {
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
@@ -403,7 +459,7 @@ app.put("/admin/cancelBooking/:id", async (req, res) => {
   }
 });
 
-app.get("/admin/bus/:id", async (req, res) => {
+app.get("/admin/bus/:id",verifyAdminToken, async (req, res) => {
   try {
     const bus = await Bus.findById(req.params.id);
 

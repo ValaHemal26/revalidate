@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { fetchBuses, deleteBus } from "../../admin/utils/api";
 import Link from "next/link";
 import "../../assets/css/admin.css";
+import { GetAuthCookie } from "../utils/Functions";
 
 export default function ManageBuses() {
   const [buses, setBuses] = useState<any[]>([]);
   const [error, setError] = useState("");
-
+  const token = GetAuthCookie();
   const loadBuses = () => {
-    fetchBuses()
+    fetchBuses(token)
       .then(setBuses)
       .catch((err) => setError(err.message));
   };
@@ -20,7 +21,7 @@ export default function ManageBuses() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure to delete this bus?")) return;
     try {
-      await deleteBus(id);
+      await deleteBus(id,token);
       loadBuses();
     } catch (err: any) {
       setError(err.message);

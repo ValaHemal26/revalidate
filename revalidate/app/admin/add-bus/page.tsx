@@ -4,6 +4,7 @@ import { useState } from "react";
 import { addBus } from "../../admin/utils/api";
 import { useRouter } from "next/navigation";
 import "../../assets/css/admin.css";
+import { GetAuthCookie } from "../utils/Functions";
 
 const weekDays = [
   "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
@@ -11,7 +12,7 @@ const weekDays = [
 
 export default function AddBus() {
   const router = useRouter();
-
+  const token = GetAuthCookie();
   const [form, setForm] = useState<any>({
     busName: "",
     busNumber: "",
@@ -81,7 +82,7 @@ export default function AddBus() {
         routeStops,
       };
 
-      await addBus(data);
+      await addBus(data,token);
       router.push("/admin/buses");
     } catch (err: any) {
       setError(err.message);

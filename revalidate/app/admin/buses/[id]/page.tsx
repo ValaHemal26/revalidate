@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getBusById, updateBusApi } from "../../utils/api";
+import { getBusById, updateBus } from "../../utils/api";
 import "../../../assets/css/admin.css";
+import { GetAuthCookie } from "../../utils/Functions";
 
 const weekDays = [
   "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
@@ -30,11 +31,11 @@ export default function EditBus() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const token = GetAuthCookie();
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const data = await getBusById(id as string);
+        const data = await getBusById(id as string,token);
 
         const stops = data.routeStops || [];
 
@@ -110,10 +111,10 @@ export default function EditBus() {
         form.destination,
       ];
 
-      await updateBusApi(id as string, {
+      await updateBus(id as string, {
         ...form,
         routeStops,
-      });
+      },token);
 
       router.push("/admin/buses");
     } catch (err: any) {

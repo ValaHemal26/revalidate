@@ -2,60 +2,32 @@
 import { useEffect, useState } from "react";
 import "../../assets/css/admin.css";
 import { useRouter } from "next/navigation";
+import { GetAuthCookie } from "../utils/Functions";
+import { fetchBuses,deleteBus } from "../utils/api";
 
 export default function ManageBus() {
   const router = useRouter();
   const [buses, setBuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const fetchBuses = async () => {
+  const token = GetAuthCookie();
+  
+  async function getBuses(token)  {
     try {
-      const res = await fetch("http://localhost:5000/admin/buses", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          setError("❌ Unauthorized. Please login as admin.");
-          return;
-        } else {
-          setError("❌ Failed to fetch buses");
-          return;
-        }
-      }
-
-      const data = await res.json();
-
-          if (!Array.isArray(data)) {
-        setError("❌ Invalid data format received from server");
-        return;
-      }
-
-      setBuses(data);
+      const res = await fetchBuses(token);
+      setBuses(res);
       setError("");
     } catch (err) {
-      console.error(err);
-      setError("❌ Something went wrong while fetching buses");
+      setError("Something went wrong while fetching buses");
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteBus = async (id: string) => {
+  async function handleDeleteBus  (id: string)  {
     try {
-      const res = await fetch(`http://localhost:5000/admin/bus/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        alert("❌ Failed to delete bus");
-        return;
-      }
-
-      fetchBuses();
+      const res = await deleteBus(id,token);
+      getBuses(token);
     } catch (err) {
       console.error(err);
       alert("❌ Something went wrong");
@@ -63,7 +35,7 @@ export default function ManageBus() {
   };
 
   useEffect(() => {
-    fetchBuses();
+    getBuses(token);
   }, []);
 
   if (loading) return <p style={{ padding: "20px" }}>Loading buses...</p>;
@@ -92,7 +64,7 @@ export default function ManageBus() {
 
               <button
                 className="delete-btn"
-                onClick={() => deleteBus(bus._id)}
+                onClick={() => handleDeleteBus(bus._id)}
               >
                 Delete
               </button>
