@@ -3,3 +3,14 @@ Step 2: Click “Next” → Show summary page with all booking details (route, 
 Step 3: User clicks “Confirm Booking” → System generates OTP, sends to user’s email.
 Step 4: User enters OTP → If valid, booking is confirmed. Show booking number, seat numbers, route, date, time, etc.
 Step 5: Optionally, send confirmation email with all booking details.
+🚀 OPTIONAL NEXT IMPROVEMENTS
+
+If you want to go next level:
+
+🔥 Replace datalist with:
+react-select (modern UI)
+searchable dropdown with grouping
+🔥 Add:
+Swap source/destination button 🔁
+Recent searches
+Popular routes

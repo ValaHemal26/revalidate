@@ -22,16 +22,110 @@ mongoose.connect("mongodb://127.0.0.1:27017/busBooking")
   .catch(err => console.log(err));
 
 /* End User API */
-app.get("/buses", async (req, res) => {
+app.get("/search-buses", async (req, res) => {
   try {
-    const buses = await Bus.find().sort({ createdAt: -1 });
+    const { source, destination, date } = req.query;
 
-    res.json(buses);
+    if (!source || !destination || !date) {
+      return res.status(400).json({ message: "Missing search params" });
+    }
 
-  } catch (error) {
+    const buses = await Bus.find();
+
+    const result = [];
+
+    for (let bus of buses) {
+      const stops = bus.routeStops;
+
+      const startIndex = stops.indexOf(source);
+      const endIndex = stops.indexOf(destination);
+
+      let status = "AVAILABLE";
+      let reason = "";
+
+      // ❌ Route invalid
+      if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+        status = "INVALID_ROUTE";
+        reason = "Route not available";
+      }
+
+      const selectedDate = new Date(date);
+      const dayName = selectedDate.toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+
+      // ❌ Disabled date
+      if (bus.disabledDates.includes(date)) {
+        status = "NOT_RUNNING";
+        reason = "Bus not available on this date";
+      }
+
+      // ❌ Specific days
+      if (
+        bus.scheduleType === "SpecificDays" &&
+        !bus.daysOfWeek.includes(dayName)
+      ) {
+        status = "NOT_RUNNING";
+        reason = `Runs only on ${bus.daysOfWeek.join(", ")}`;
+      }
+
+      // ❌ Specific dates
+      if (
+        bus.scheduleType === "SpecificDates" &&
+        !bus.specificDates.includes(date)
+      ) {
+        status = "NOT_RUNNING";
+        reason = "Not scheduled on this date";
+      }
+
+      let availableSeats = 0;
+
+      if (status === "AVAILABLE") {
+        const bookings = await Booking.find({
+          busId: bus._id,
+          date,
+          status: "Booked",
+        });
+
+        for (let seat = 1; seat <= bus.totalSeats; seat++) {
+          let isBooked = false;
+
+          for (let booking of bookings) {
+            const existingStart = stops.indexOf(booking.startStop);
+            const existingEnd = stops.indexOf(booking.endStop);
+
+            const conflict =
+              startIndex < existingEnd &&
+              endIndex > existingStart;
+
+            if (booking.seatNumber === seat && conflict) {
+              isBooked = true;
+              break;
+            }
+          }
+
+          if (!isBooked) availableSeats++;
+        }
+
+        if (availableSeats === 0) {
+          status = "FULL";
+          reason = "No seats available";
+        }
+      }
+
+      result.push({
+        ...bus.toObject(),
+        status,
+        reason,
+        availableSeats,
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
     res.status(500).json({
-      message: "Failed to fetch buses",
-      error: error.message
+      message: "Search failed",
+      error: err.message,
     });
   }
 });
@@ -235,7 +329,7 @@ app.get("/bus/:id", async (req, res) => {
 });
 const otpStore = {};
 app.post("/send-otp", async (req, res) => {
-  const { email } = req.body;
+  const { email,journey } = req.body;
 
   if (!email) {
     return res.status(400).json({ message: "Email required" });
@@ -249,19 +343,31 @@ app.post("/send-otp", async (req, res) => {
   };
 
   try {
-    await sendOTP(email, otp);
+    await sendOTP(email, otp,journey);
 
     res.json({ success: true, message: "OTP sent to email" });
   } catch (err) {
     res.status(500).json({ message: "Failed to send OTP" });
   }
 });
+app.get("/buses", async (req, res) => {
+  try {
+    const buses = await Bus.find().sort({ createdAt: -1 });
 
+    res.json(buses);
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch buses",
+      error: error.message
+    });
+  }
+});
 app.post("/verify-otp", (req, res) => {
   const { email, otp } = req.body;
-
+  
   const record = otpStore[email];
-
+  console.log(record);
   if (!record) {
     return res.status(400).json({ message: "OTP not found" });
   }
@@ -280,7 +386,7 @@ app.post("/verify-otp", (req, res) => {
 });
 /* Admin Side API  */
 
-app.post("/admin/login", verifyAdminToken,async (req, res) => {
+app.post("/admin/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 

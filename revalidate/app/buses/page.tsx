@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchBuses } from "../utils/api";
+import { searchBuses, fetchBuses } from "../utils/api";
 import BusCard from "../components/BusCard";
+import { LoaderModal } from "../components/LoaderModal";
 
 export default function BusesPage() {
   const [allBuses, setAllBuses] = useState<any[]>([]);
   const [filteredBuses, setFilteredBuses] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState("");
 
   const [source, setSource] = useState("");
@@ -17,144 +19,122 @@ export default function BusesPage() {
 
   const [hasSearched, setHasSearched] = useState(false);
 
-  const [showSource, setShowSource] = useState(false);
-  const [showDestination, setShowDestination] = useState(false);
-
+  // ✅ Load all buses only for stops list
   useEffect(() => {
     fetchBuses()
       .then((data) => setAllBuses(data))
       .catch((err: any) => setError(err.message));
   }, []);
 
- const allStops = [];
+  // ✅ Extract all stops
+  const allStops: string[] = [];
 
   allBuses.forEach((bus) => {
-    bus.routeStops.forEach((stop) => {
+    bus.routeStops.forEach((stop: string) => {
       if (!allStops.includes(stop)) {
         allStops.push(stop);
       }
     });
   });
 
-  const filteredSourceStops = allStops.filter((stop) =>
-    stop.toLowerCase().includes(source.toLowerCase())
-  );
+  // ✅ Date restrictions
+  const today = new Date();
+  const maxDate = new Date();
+  maxDate.setMonth(today.getMonth() + 1);
 
-  const filteredDestinationStops = allStops.filter((stop) =>
-    stop.toLowerCase().includes(destination.toLowerCase())
-  );
+  const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
-  function handleSearch() {
+  // ✅ Search handler
+  async function handleSearch() {
     if (!source || !destination || !date) {
-      setError("All fields required");
-      return;
+      return setError("All fields required");
     }
 
     setError("");
     setLoading(true);
+    setLoadingMessage("🔍 Searching buses for your route...");
 
-    const result = allBuses.filter((bus) => {
-      return (
-        bus.routeStops.includes(source) &&
-        bus.routeStops.includes(destination)
-      );
-    });
+    const start = Date.now();
 
-    setFilteredBuses(result);
-    setHasSearched(true);
+    const res = await searchBuses(source, destination, date);
+
+    const elapsed = Date.now() - start;
+    if (elapsed < 1000) {
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+
     setLoading(false);
+
+    if (!res.success) {
+      return setError(res.data.message || "Search failed");
+    }
+
+    setFilteredBuses(res.data);
+    setHasSearched(true);
   }
 
   return (
     <div className="search-box">
+      <LoaderModal show={loading} message={loadingMessage} />
+
       <h2>Search Buses</h2>
 
       {error && <p className="error">{error}</p>}
 
-      <div className="dropdown">
-        <input
-          placeholder="Source"
-          value={source}
-          onChange={(e) => {
-            setSource(e.target.value);
-            setShowSource(true);
-          }}
-          onFocus={() => setShowSource(true)}
-        />
+      {/* ✅ Source Input */}
+      <input
+        list="source-stops"
+        placeholder="Source"
+        value={source}
+        onChange={(e) => setSource(e.target.value)}
+      />
+      <datalist id="source-stops">
+        {allStops.map((stop, i) => (
+          <option key={i} value={stop} />
+        ))}
+      </datalist>
 
-        {showSource && source && (
-          <div className="dropdown-menu">
-            {filteredSourceStops.length ? (
-              filteredSourceStops.map((stop, i) => (
-                <div
-                  key={i}
-                  className="item"
-                  onClick={() => {
-                    setSource(stop);
-                    setShowSource(false);
-                  }}
-                >
-                  {stop}
-                </div>
-              ))
-            ) : (
-              <div className="item">No result</div>
-            )}
-          </div>
-        )}
-      </div>
+      {/* ✅ Destination Input */}
+      <input
+        list="destination-stops"
+        placeholder="Destination"
+        value={destination}
+        onChange={(e) => setDestination(e.target.value)}
+      />
+      <datalist id="destination-stops">
+        {allStops.map((stop, i) => (
+          <option key={i} value={stop} />
+        ))}
+      </datalist>
 
-      <div className="dropdown">
-        <input
-          placeholder="Destination"
-          value={destination}
-          onChange={(e) => {
-            setDestination(e.target.value);
-            setShowDestination(true);
-          }}
-          onFocus={() => setShowDestination(true)}
-        />
-
-        {showDestination && destination && (
-          <div className="dropdown-menu">
-            {filteredDestinationStops.length ? (
-              filteredDestinationStops.map((stop, i) => (
-                <div
-                  key={i}
-                  className="item"
-                  onClick={() => {
-                    setDestination(stop);
-                    setShowDestination(false);
-                  }}
-                >
-                  {stop}
-                </div>
-              ))
-            ) : (
-              <div className="item">No result</div>
-            )}
-          </div>
-        )}
-      </div>
-
+      {/* ✅ Date Input with restriction */}
       <input
         type="date"
         value={date}
+        min={formatDate(today)}
+        max={formatDate(maxDate)}
         onChange={(e) => setDate(e.target.value)}
       />
 
-      <button onClick={handleSearch}>Search</button>
+      <button onClick={handleSearch} disabled={loading}>
+        Search
+      </button>
 
+      {/* ✅ Route Summary */}
       {hasSearched && (
         <div className="summary">
-          {source} → {destination} | {date}
+          🧭 {source} → {destination} | 📅 {date}
         </div>
       )}
 
-      {loading && <p>Loading...</p>}
-
+      {/* ✅ Results */}
       {!loading && hasSearched && (
-        <BusCard bus={filteredBuses} date={date} destination={destination} source={source}  />
+        <BusCard
+          bus={filteredBuses}
+          date={date}
+          destination={destination}
+          source={source}
+        />
       )}
     </div>
   );

@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<any>({});
   const [error, setError] = useState("");
   const token = GetAuthCookie();
+  
   useEffect(() => {
     fetchDashboard({token})
       .then(setStats)

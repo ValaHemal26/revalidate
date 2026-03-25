@@ -1,13 +1,26 @@
 export const API_URL = "http://localhost:5000";
 
+export async function searchBuses(source: string, destination: string, date: string) {
+  const res = await fetch(
+    `${API_URL}/search-buses?source=${source}&destination=${destination}&date=${date}`
+  );
+
+  const data = await res.json();
+
+  return {
+    success: res.ok,
+    data,
+  };
+}
+
 export async function fetchBuses() {
-  try {
-    const res = await fetch(API_URL + "/buses");
-    if (!res.ok) throw new Error("Failed to fetch buses");
-    return await res.json();
-  } catch (err: any) {
-    throw new Error(err.message || "Unknown error fetching buses");
-  }
+  
+  const res = await fetch(API_URL + "/buses",{
+    method: "GET",
+   
+  });
+  if (!res.ok) throw new Error("Failed to fetch buses");
+  return res.json();
 }
 
 
@@ -49,3 +62,29 @@ export async function getBus (id: string)  {
 
   return data;
 };
+
+export async function sendOtp(email: string, journey: any) {
+  const res = await fetch(API_URL + "/send-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, journey }),
+  });
+
+  const data = await res.json();
+
+  return { success: res.ok, data };
+}
+export async function verifyOtp(email: string, otp: string) {
+  const res = await fetch(API_URL + "/verify-otp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, otp }),
+  });
+
+  const data = await res.json();
+
+  return {
+    success: res.ok,
+    data,
+  };
+}
