@@ -13,7 +13,7 @@ export default function Dashboard() {
   const token = GetAuthCookie();
   
   useEffect(() => {
-    fetchDashboard({token})
+    fetchDashboard(token)
       .then(setStats)
       .catch((err) => setError(err.message));
   }, []);

@@ -1,99 +1,117 @@
 "use client";
 
 import { useState } from "react";
-import  ErrorMessage  from "../components/ErrorMessage";
-import  {LoaderModal}  from "../components/LoaderModal";
-import  SeatLayout  from "../components/SeatLayout";
+import ErrorMessage from "../components/ErrorMessage";
+import { LoaderModal } from "../components/LoaderModal";
+import SeatLayout from "../components/SeatLayout";
 import { sendOtp, verifyOtp, bookSeat } from "../utils/api";
 
+export default function BookingForm({ bus, date, source, destination }: any) {
+  const [step, setStep] = useState(1);
 
-export default function BookingForm({
-  bus,
-  date,
-  source,
-  destination,
-}: any) {
   const [selectedSeats, setSelectedSeats] = useState<number[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [startStop] = useState(source); 
-  const [endStop] = useState(destination);
+
+  const [otp, setOtp] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  const [showSummary, setShowSummary] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
 
-  function normalize (val: string) { return val?.toString().trim().toLowerCase(); } 
-  const startIndex = bus.routeStops.findIndex( (stop: string) => normalize(stop) === normalize(startStop) ); 
-  const endIndex = bus.routeStops.findIndex( (stop: string) => normalize(stop) === normalize(endStop) );
-  const totalStops = Math.max(bus.routeStops.length - 1, 1); const segmentDistance = startIndex >= 0 && endIndex >= 0 ? Math.abs(endIndex - startIndex) : 0; const basePrice = Number(bus.basePrice) || 0; const price = startIndex >= 0 && endIndex >= 0 && startIndex !== endIndex ? Math.round((segmentDistance / totalStops) * basePrice) : 0;
+  // PRICE LOGIC
+  function normalize(val: string) {
+    return val?.toString().trim().toLowerCase();
+  }
+
+  const startIndex = bus.routeStops.findIndex(
+    (s: string) => normalize(s) === normalize(source)
+  );
+
+  const endIndex = bus.routeStops.findIndex(
+    (s: string) => normalize(s) === normalize(destination)
+  );
+
+  const totalStops = Math.max(bus.routeStops.length - 1, 1);
+  const segmentDistance =
+    startIndex >= 0 && endIndex >= 0
+      ? Math.abs(endIndex - startIndex)
+      : 0;
+
+  const basePrice = Number(bus.basePrice) || 0;
+
+  const price =
+    startIndex !== endIndex
+      ? Math.round((segmentDistance / totalStops) * basePrice)
+      : 0;
+
   const totalPrice = price * selectedSeats.length;
- async function handleBookingSummary() {
+
+  // STEP 2 → SEND OTP
+  async function handleSendOtp() {
     if (!name || !email || !phone) {
       return setError("Fill all details");
     }
 
-    if (selectedSeats.length === 0) {
-      return setError("Select seats");
-    }
-
     setLoading(true);
-    setLoadingMessage("Sending OTP to your email...");
+    setLoadingMessage("Sending OTP...");
 
-    const res = await sendOtp(email, {
-      name,
-      source,
-      destination,
-      date,
-      seats: selectedSeats,
-      totalPrice,
-    });
+    try {
+      const res = await sendOtp(email, {
+        name,
+        source,
+        destination,
+        date,
+        seats: selectedSeats,
+        totalPrice,
+      });
 
-    setLoading(false);
+      if (!res?.success) {
+        return setError(res?.data?.message || "OTP failed");
+      }
 
-    if (!res.success) {
-      return setError(res.data.message || "Failed to send OTP");
+      setStep(3);
+      setError("");
+    } catch {
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    setOtpSent(true);
-    setShowSummary(true);
   }
-  // ✅ VERIFY OTP
+
+  // STEP 4 → VERIFY OTP
   async function handleVerifyOtp() {
     if (!otp) return setError("Enter OTP");
 
     setLoading(true);
-
-    const res = await verifyOtp(email, otp);
-
-    setLoading(false);
-
-    if (!res.success) {
-      return setError(res.data.message || "Invalid OTP");
-    }
-
-    setOtpVerified(true);
-    setError("");
-    setSuccess("OTP Verified ✅");
-  }
-
-  // ✅ BOOK TICKET
-  async function handleConfirmBooking() {
-    if (!otpVerified) {
-      return setError("Verify OTP first");
-    }
-
-    setLoading(true);
+    setLoadingMessage("Verifying OTP...");
 
     try {
-      for (const seatNumber of selectedSeats) {
+      const res = await verifyOtp(email, otp);
+
+      if (!res?.success) {
+        return setError(res?.data?.message || "Invalid OTP");
+      }
+
+      setOtpVerified(true);
+      setError("");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleBooking() {
+    if (!otpVerified) return setError("Verify OTP first");
+
+    setLoading(true);
+    setLoadingMessage("Booking your seats...");
+
+    try {
+      for (const seat of selectedSeats) {
         const res = await bookSeat({
           name,
           email,
@@ -101,104 +119,106 @@ export default function BookingForm({
           busId: bus._id,
           startStop: source,
           endStop: destination,
-          seatNumber,
+          seatNumber: seat,
           date,
         });
 
-        if (!res.success) {
-          setLoading(false);
-          return setError(res.data.message || "Booking failed");
+        if (!res?.success) {
+          return setError(res?.data?.message || "Booking failed");
         }
       }
 
-      setSuccess("Booking successful 🎉");
-      setError("");
-    } catch (err: any) {
+      setStep(5);
+      setSuccess("Booking Successful 🎉");
+    } catch {
       setError("Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
-    <div>
+    <div className="container">
       <LoaderModal show={loading} message={loadingMessage} />
-
       <ErrorMessage message={error} />
-      {success && <div className="success-box">{success}</div>}
 
-      {showSummary ? (
-        <div className="summary-box">
-          <h3>Summary</h3>
-
-          <p>{name}</p>
-          <p>{email}</p>
-          <p>{phone}</p>
-          <p>{source} → {destination}</p>
-
-          <p>Seats: {selectedSeats.join(", ")}</p>
-          <p>Total: {totalPrice}</p>
-
-          {otpSent && !otpVerified && (
-            <div>
-              <input
-                placeholder="Enter OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-              />
-
-              <button type="button" onClick={handleVerifyOtp}>
-                Verify OTP
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={handleConfirmBooking}
-            disabled={!otpVerified}
-          >
-            Confirm Booking
-          </button>
-
-          <button onClick={() => setShowSummary(false)}>
-            Back
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="route-box"> 
-            <p> 
-              <strong>{startStop}</strong> → <strong>{endStop}</strong>
-            </p>
-            <span>{date}</span> 
+   
+      <div className="stepper">
+        {["Seats", "Details", "Summary", "OTP", "Done"].map((s, i) => (
+          <div key={i} className={step >= i + 1 ? "active" : ""}>
+            {s}
           </div>
-          <input
-            placeholder="Name"
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            placeholder="Phone"
-            onChange={(e) => setPhone(e.target.value)}
-          />
+        ))}
+      </div>
 
+      {step === 1 && (
+        <>
+          <h3>{source} → {destination}</h3>
           <SeatLayout
             seats={bus.totalSeats}
             selected={selectedSeats}
             setSelected={setSelectedSeats}
           />
 
-          <p>Seats: {selectedSeats.join(", ") || "-"}</p> 
-          <p>Price per seat: {price}</p>
           <p>Total: {totalPrice}</p>
 
-          <button onClick={handleBookingSummary}>
+          <button
+            onClick={() => {
+              if (!selectedSeats.length) return setError("Select seats");
+              setStep(2);
+            }}
+          >
             Next
           </button>
         </>
+      )}
+
+      {step === 2 && (
+        <>
+          <input placeholder="Name" onChange={(e) => setName(e.target.value)} />
+          <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
+          <input placeholder="Phone" onChange={(e) => setPhone(e.target.value)} />
+
+          <button onClick={handleSendOtp}>Next</button>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <h3>Summary</h3>
+          <p>{name}</p>
+          <p>{email}</p>
+          <p>{phone}</p>
+          <p>Seats: {selectedSeats.join(", ")}</p>
+          <p>Total: {totalPrice}</p>
+
+          <button onClick={() => setStep(4)}>Proceed</button>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <input
+            placeholder="Enter OTP"
+            onChange={(e) => setOtp(e.target.value)}
+          />
+
+          <button onClick={handleVerifyOtp}>Verify OTP</button>
+
+          <button disabled={!otpVerified} onClick={handleBooking}>
+            Confirm Booking
+          </button>
+        </>
+      )}
+
+      {step === 5 && (
+        <div className="success-box">
+          <h2>{success}</h2>
+          <p>{name}</p>
+          <p>{email}</p>
+          <p>{source} → {destination}</p>
+          <p>Seats: {selectedSeats.join(", ")}</p>
+        </div>
       )}
     </div>
   );

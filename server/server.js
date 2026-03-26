@@ -25,7 +25,7 @@ mongoose.connect("mongodb://127.0.0.1:27017/busBooking")
 app.get("/search-buses", async (req, res) => {
   try {
     const { source, destination, date } = req.query;
-
+   
     if (!source || !destination || !date) {
       return res.status(400).json({ message: "Missing search params" });
     }
@@ -37,18 +37,22 @@ app.get("/search-buses", async (req, res) => {
     const dayName = selectedDate.toLocaleDateString("en-US", {
       weekday: "long",
     });
-
+  
     for (let bus of buses) {
+      console.log(JSON.stringify(bus));
       const stops = bus.routeStops;
+      const startIndex = stops.findIndex(
+        (stop) => stop.toLowerCase() === source.toLowerCase()
+      );
 
-      const startIndex = stops.indexOf(source);
-      const endIndex = stops.indexOf(destination);
-
+      const endIndex = stops.findIndex(
+        (stop) => stop.toLowerCase() === destination.toLowerCase()
+      );
+      
       // ✅ Only include VALID ROUTES
       if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
         continue;
       }
-
       let status = "AVAILABLE";
       let reason = "";
 
@@ -165,8 +169,13 @@ app.post("/bookSeat", async (req, res) => {
 
     const stops = bus.routeStops;
 
-    const startIndex = stops.indexOf(startStop);
-    const endIndex = stops.indexOf(endStop);
+    const startIndex = stops.findIndex(
+      (stop) => stop.toLowerCase() === startStop.toLowerCase()
+    );
+
+    const endIndex = stops.findIndex(
+      (stop) => stop.toLowerCase() === endStop.toLowerCase()
+    );
 
     if (startIndex === -1 || endIndex === -1) {
       return res.status(400).json({ message: "Invalid stops selected" });
@@ -181,7 +190,7 @@ app.post("/bookSeat", async (req, res) => {
 
     const selectedDate = new Date(date);
     const dayName = selectedDate.toLocaleDateString("en-US", { weekday: "long" });
-
+  
     if (bus.disabledDates.includes(date)) {
       return res.status(400).json({
         message: "Bus not available on this date"
@@ -191,7 +200,7 @@ app.post("/bookSeat", async (req, res) => {
     if (bus.scheduleType === "SpecificDays") {
       if (!bus.daysOfWeek.includes(dayName)) {
         return res.status(400).json({
-          message: "Bus does not run on this day"
+             message: "Bus does not run on " + dayName +  ". It runs every " + bus.daysOfWeek + "."
         });
       }
     }
@@ -213,16 +222,20 @@ app.post("/bookSeat", async (req, res) => {
 
     const existingBookings = await Booking.find({
       busId,
-      date,
+      travelDate:date,
       seatNumber,
       status: "Booked"
     });
+   
+     for (let booking of existingBookings) {
+     
+      const existingStartIndex = stops.findIndex(
+        s => s.trim().toLowerCase() === booking.startStop.trim().toLowerCase()
+      );
 
-
-    for (let booking of existingBookings) {
-      const existingStartIndex = stops.indexOf(booking.startStop);
-      const existingEndIndex = stops.indexOf(booking.endStop);
-
+      const existingEndIndex = stops.findIndex(
+        s => s.trim().toLowerCase() === booking.endStop.trim().toLowerCase()
+      );
       const isConflict =
         (startIndex < existingEndIndex) &&
         (endIndex > existingStartIndex);
@@ -249,7 +262,7 @@ app.post("/bookSeat", async (req, res) => {
       startStop,
       endStop,
       seatNumber,
-      date,
+       travelDate: date,
       price
     });
 

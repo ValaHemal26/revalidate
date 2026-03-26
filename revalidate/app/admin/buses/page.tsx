@@ -10,6 +10,7 @@ export default function ManageBuses() {
   const [buses, setBuses] = useState<any[]>([]);
   const [error, setError] = useState("");
   const token = GetAuthCookie();
+
   const loadBuses = () => {
     fetchBuses(token)
       .then(setBuses)

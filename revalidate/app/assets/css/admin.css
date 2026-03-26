@@ -71,6 +71,7 @@
   width: 90%;
   max-width: 1000px;
   margin: 40px auto;
+  overflow: auto;
 }
 
 /* Stats Cards */

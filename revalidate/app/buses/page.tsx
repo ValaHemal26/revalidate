@@ -22,9 +22,7 @@ export default function BusesPage() {
   const [destInputValue, setDestInputValue] = useState("");
 
   const [hasSearched, setHasSearched] = useState(false);
-  const Select = dynamic(() => import('react-select'), {
-    ssr: false,
-  });
+  
   useEffect(() => {
     fetchBuses()
       .then((data) => setAllBuses(data))
@@ -66,21 +64,28 @@ export default function BusesPage() {
     setError("");
     setLoading(true);
     setLoadingMessage("🔍 Searching buses for your route...");
+    try {
+    
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    const res = await searchBuses(
-      source.value,
-      destination.value,
-      date
-    );
+      const res = await searchBuses(
+        source.value,
+        destination.value,
+        date
+      );
 
-    setLoading(false);
+      if (!res?.success) {
+        return setError(res?.data?.message || "Search failed");
+      }
 
-    if (!res.success) {
-      return setError(res.data.message || "Search failed");
+      setFilteredBuses(res.data);
+      setHasSearched(true);
+
+    } catch (err) {
+      setError("Something went wrong");
+    } finally {
+      setLoading(false);
     }
-
-    setFilteredBuses(res.data);
-    setHasSearched(true);
   }
 
   return (

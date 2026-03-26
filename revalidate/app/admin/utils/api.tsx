@@ -1,5 +1,3 @@
-import { error } from "node:console";
-
 const API_URl = "http://localhost:5000";
 /*
 Email: admin@example.com
@@ -16,12 +14,12 @@ export async function adminLogin(email: string, password: string) {
 }
 
 export async function fetchDashboard(token) {
+
   if(!token) throw new Error ("Please Provide Authentication Token");
   const res = await fetch(`${API_URl}/admin/dashboard`,{
       method: 'GET',
       headers: {
-        'Authorization': "Bearer " + token, 
-        'Content-Type': 'application/json' 
+        "Authorization": "Bearer " + token
       }
     }
   );

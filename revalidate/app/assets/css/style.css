@@ -414,3 +414,54 @@ input, button {
 .search-input{
   margin-bottom: 10px;
 }
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+}
+
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.stepper div {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  border-bottom: 3px solid #ccc;
+  font-size: 12px;
+}
+
+.stepper .active {
+  border-color: #007bff;
+  font-weight: bold;
+  color: #007bff;
+}
+
+input {
+  width: 100%;
+  margin: 8px 0;
+  padding: 10px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px;
+  width: 100%;
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: gray;
+}
+
+.success-box {
+  background: #e6ffe6;
+  padding: 20px;
+  border-radius: 10px;
+}

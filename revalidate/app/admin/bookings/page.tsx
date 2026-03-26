@@ -51,7 +51,7 @@ export default function BookingsPage() {
         <tbody>
           {bookings.map((b) => (
             <tr key={b._id}>
-              <td>{b.busId?.busName}</td>
+              <td>{b.busId}</td>
               <td>{b.name}</td>
               <td>{b.seatNumber}</td>
               <td>{b.startStop}</td>
