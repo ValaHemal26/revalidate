@@ -1,4 +1,4 @@
-export const API_URL = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 export async function searchBuses(source: string, destination: string, date: string) {
   const res = await fetch(

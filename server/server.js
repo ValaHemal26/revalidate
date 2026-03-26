@@ -31,8 +31,12 @@ app.get("/search-buses", async (req, res) => {
     }
 
     const buses = await Bus.find();
-
     const result = [];
+
+    const selectedDate = new Date(date);
+    const dayName = selectedDate.toLocaleDateString("en-US", {
+      weekday: "long",
+    });
 
     for (let bus of buses) {
       const stops = bus.routeStops;
@@ -40,19 +44,13 @@ app.get("/search-buses", async (req, res) => {
       const startIndex = stops.indexOf(source);
       const endIndex = stops.indexOf(destination);
 
-      let status = "AVAILABLE";
-      let reason = "";
-
-      // ❌ Route invalid
+      // ✅ Only include VALID ROUTES
       if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
-        status = "INVALID_ROUTE";
-        reason = "Route not available";
+        continue;
       }
 
-      const selectedDate = new Date(date);
-      const dayName = selectedDate.toLocaleDateString("en-US", {
-        weekday: "long",
-      });
+      let status = "AVAILABLE";
+      let reason = "";
 
       // ❌ Disabled date
       if (bus.disabledDates.includes(date)) {
@@ -61,7 +59,7 @@ app.get("/search-buses", async (req, res) => {
       }
 
       // ❌ Specific days
-      if (
+      else if (
         bus.scheduleType === "SpecificDays" &&
         !bus.daysOfWeek.includes(dayName)
       ) {
@@ -70,7 +68,7 @@ app.get("/search-buses", async (req, res) => {
       }
 
       // ❌ Specific dates
-      if (
+      else if (
         bus.scheduleType === "SpecificDates" &&
         !bus.specificDates.includes(date)
       ) {
@@ -80,6 +78,7 @@ app.get("/search-buses", async (req, res) => {
 
       let availableSeats = 0;
 
+      // ✅ Check seats ONLY if running
       if (status === "AVAILABLE") {
         const bookings = await Booking.find({
           busId: bus._id,
@@ -118,6 +117,12 @@ app.get("/search-buses", async (req, res) => {
         status,
         reason,
         availableSeats,
+
+        scheduleInfo: {
+          type: bus.scheduleType,
+          days: bus.daysOfWeek,
+          dates: bus.specificDates,
+        },
       });
     }
 
@@ -129,6 +134,7 @@ app.get("/search-buses", async (req, res) => {
     });
   }
 });
+
 app.post("/bookSeat", async (req, res) => {
   try {
     const {
@@ -327,6 +333,7 @@ app.get("/bus/:id", async (req, res) => {
     });
   }
 });
+
 const otpStore = {};
 app.post("/send-otp", async (req, res) => {
   const { email,journey } = req.body;
@@ -350,11 +357,13 @@ app.post("/send-otp", async (req, res) => {
     res.status(500).json({ message: "Failed to send OTP" });
   }
 });
+
 app.get("/buses", async (req, res) => {
   try {
-    const buses = await Bus.find().sort({ createdAt: -1 });
+    const response = await fetch("https://api.kosontechnology.com/country-state-city.php?country=IN&state=GJ&city=all");
+    const data = await response.json();
+    res.status(200).json(data);
 
-    res.json(buses);
 
   } catch (error) {
     res.status(500).json({
@@ -363,11 +372,12 @@ app.get("/buses", async (req, res) => {
     });
   }
 });
+
 app.post("/verify-otp", (req, res) => {
   const { email, otp } = req.body;
   
   const record = otpStore[email];
-  console.log(record);
+  
   if (!record) {
     return res.status(400).json({ message: "OTP not found" });
   }

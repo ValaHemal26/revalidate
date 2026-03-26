@@ -1,15 +1,19 @@
-# Ignore all node_modules folders
-**/node_modules
+# Node modules (never push these)
+node_modules/
+**/node_modules/
 
-# Ignore all Next.js build folders
-**/.next
+# Environment files (keep secrets safe)
+.env
+.env.*
+!.env.example
 
-# Ignore Next.js output folder (optional)
-**/out
+# Next.js build folders
+.next/
+out/
 
-# Optional: log files
+# Logs
 *.log
 
-# OS generated files
+# OS files
 .DS_Store
 Thumbs.db

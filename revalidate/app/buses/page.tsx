@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Select from "react-select";
 import { searchBuses, fetchBuses } from "../utils/api";
 import BusCard from "../components/BusCard";
+import dynamic from "next/dynamic";
 import { LoaderModal } from "../components/LoaderModal";
 
 export default function BusesPage() {
@@ -13,55 +15,63 @@ export default function BusesPage() {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [error, setError] = useState("");
 
-  const [source, setSource] = useState("");
-  const [destination, setDestination] = useState("");
+  const [source, setSource] = useState<any>(null);
+  const [destination, setDestination] = useState<any>(null);
   const [date, setDate] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const [destInputValue, setDestInputValue] = useState("");
 
   const [hasSearched, setHasSearched] = useState(false);
-
-  // ✅ Load all buses only for stops list
+  const Select = dynamic(() => import('react-select'), {
+    ssr: false,
+  });
   useEffect(() => {
     fetchBuses()
       .then((data) => setAllBuses(data))
       .catch((err: any) => setError(err.message));
   }, []);
 
-  // ✅ Extract all stops
-  const allStops: string[] = [];
+  const stopSet = new Set<string>();
 
   allBuses.forEach((bus) => {
-    bus.routeStops.forEach((stop: string) => {
-      if (!allStops.includes(stop)) {
-        allStops.push(stop);
-      }
-    });
+    stopSet.add(bus.name);
   });
 
-  // ✅ Date restrictions
+  const stopOptions = Array.from(stopSet).map((stop) => ({
+    value: stop,
+    label: stop,
+  }));
+
+  const filteredOptions = stopOptions.filter((opt) =>
+    opt.label.toLowerCase().includes(inputValue.toLowerCase())
+  );
+  const filteredDestOptions = stopOptions.filter((opt) =>
+    opt.label.toLowerCase().includes(destInputValue.toLowerCase())
+  );
   const today = new Date();
   const maxDate = new Date();
   maxDate.setMonth(today.getMonth() + 1);
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
-  // ✅ Search handler
   async function handleSearch() {
     if (!source || !destination || !date) {
       return setError("All fields required");
+    }
+
+    if (source.value === destination.value) {
+      return setError("Source and destination cannot be same");
     }
 
     setError("");
     setLoading(true);
     setLoadingMessage("🔍 Searching buses for your route...");
 
-    const start = Date.now();
-
-    const res = await searchBuses(source, destination, date);
-
-    const elapsed = Date.now() - start;
-    if (elapsed < 1000) {
-      await new Promise((r) => setTimeout(r, 1000));
-    }
+    const res = await searchBuses(
+      source.value,
+      destination.value,
+      date
+    );
 
     setLoading(false);
 
@@ -81,33 +91,26 @@ export default function BusesPage() {
 
       {error && <p className="error">{error}</p>}
 
-      {/* ✅ Source Input */}
-      <input
-        list="source-stops"
-        placeholder="Source"
+      <Select
+        options={inputValue ? filteredOptions : []}
         value={source}
-        onChange={(e) => setSource(e.target.value)}
+        onChange={setSource}
+        onInputChange={(val) => setInputValue(val)}
+        placeholder="Type source..."
+        isSearchable
+        className="search-input"
       />
-      <datalist id="source-stops">
-        {allStops.map((stop, i) => (
-          <option key={i} value={stop} />
-        ))}
-      </datalist>
 
-      {/* ✅ Destination Input */}
-      <input
-        list="destination-stops"
-        placeholder="Destination"
+      <Select
+        options={destInputValue ? filteredDestOptions : []}
         value={destination}
-        onChange={(e) => setDestination(e.target.value)}
+        onChange={setDestination}
+        onInputChange={(val) => setDestInputValue(val)}
+        placeholder="Type destination..."
+        isSearchable
+        className="search-input"
       />
-      <datalist id="destination-stops">
-        {allStops.map((stop, i) => (
-          <option key={i} value={stop} />
-        ))}
-      </datalist>
 
-      {/* ✅ Date Input with restriction */}
       <input
         type="date"
         value={date}
@@ -120,10 +123,10 @@ export default function BusesPage() {
         Search
       </button>
 
-      {/* ✅ Route Summary */}
-      {hasSearched && (
+      {/* ✅ Summary */}
+      {hasSearched && source && destination && (
         <div className="summary">
-          🧭 {source} → {destination} | 📅 {date}
+          🧭 {source.label} → {destination.label} | 📅 {date}
         </div>
       )}
 
@@ -132,8 +135,8 @@ export default function BusesPage() {
         <BusCard
           bus={filteredBuses}
           date={date}
-          destination={destination}
-          source={source}
+          destination={destination?.value}
+          source={source?.value}
         />
       )}
     </div>

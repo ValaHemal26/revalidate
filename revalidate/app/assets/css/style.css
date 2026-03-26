@@ -393,3 +393,24 @@ input, button {
 .summary-box button:last-of-type:hover {
   background: #ddd;
 }
+.bus-card.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.reason {
+  color: red;
+  font-size: 14px;
+}
+
+.bus-status {
+  margin-top: 8px;
+}
+
+.bus-schedule {
+  font-size: 14px;
+  color: #555;
+}
+.search-input{
+  margin-bottom: 10px;
+}
