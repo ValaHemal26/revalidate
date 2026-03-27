@@ -88,3 +88,38 @@ export async function verifyOtp(email: string, otp: string) {
     data,
   };
 }
+
+export async function setSendTicketOTP(type,value){
+  const res = await fetch(API_URL + "/track-ticket-request", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(
+        type === "email"
+          ? { email: value }
+          : { phone: value }
+      ),
+    });
+  
+  const data = await res.json();
+  
+  return data;
+}
+
+export async function verifyTicketOtp(user,otp) {
+  console.log(user.userEmail);
+  const res = await fetch(API_URL + "/track-ticket-verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: user.userEmail,
+          otp: otp,
+        }),
+      });
+   
+   return await res.json();
+
+}

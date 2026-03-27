@@ -363,26 +363,11 @@ app.post("/send-otp", async (req, res) => {
   };
 
   try {
-    await sendOTP(email, otp,journey);
+    await sendOTP(email, otp,journey,"BOOKING");
 
     res.json({ success: true, message: "OTP sent to email" });
   } catch (err) {
     res.status(500).json({ message: "Failed to send OTP" });
-  }
-});
-
-app.get("/buses", async (req, res) => {
-  try {
-    const response = await fetch("https://api.kosontechnology.com/country-state-city.php?country=IN&state=GJ&city=all");
-    const data = await response.json();
-    res.status(200).json(data);
-
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch buses",
-      error: error.message
-    });
   }
 });
 
@@ -407,6 +392,233 @@ app.post("/verify-otp", (req, res) => {
 
   res.json({ success: true });
 });
+
+app.get("/buses", async (req, res) => {
+  try {
+    const response = await fetch("https://api.kosontechnology.com/country-state-city.php?country=IN&state=GJ&city=all");
+    const data = await response.json();
+    res.status(200).json(data);
+
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch buses",
+      error: error.message
+    });
+  }
+});
+
+app.post("/track-ticket-request", async (req, res) => {
+  try {
+    const { email, phone } = req.body;
+
+    let userEmail = email;
+    let lastBooking = null;
+
+    // If phone is provided → fetch latest booking
+    if (phone) {
+      lastBooking = await Booking.findOne({ phone })
+        .sort({ createdAt: -1 });
+
+      if (!lastBooking) {
+        return res.status(404).json({
+          message: "No booking found with this phone number"
+        });
+      }
+
+      userEmail = lastBooking.email;
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({
+        message: "Email or Phone is required"
+      });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    otpStore[userEmail] = {
+      otp,
+      expiresAt: Date.now() + 5 * 60 * 1000,
+    };
+
+    // Prepare journey info (safe fallback)
+    const journey = lastBooking
+      ? {
+          name: lastBooking.name,
+          source: lastBooking.startStop,
+          destination: lastBooking.endStop,
+          date: lastBooking.travelDate,
+          seats: [lastBooking.seatNumber],
+          totalPrice: lastBooking.price,
+        }
+      : null;
+
+    // Send OTP (with custom type)
+    await sendOTP(userEmail, otp, journey, "TRACK");
+
+    res.json({
+      success: true,
+      message: "OTP sent successfully",
+      email: userEmail // useful for frontend
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to process request",
+      error: error.message
+    });
+  }
+});
+
+app.post("/track-ticket-verify", async (req, res) => {
+  try {
+    const { email, phone, otp } = req.body;
+
+    let userEmail = email;
+    let type = "email";
+
+    if (phone) {
+      type = "phone";
+
+      const lastBooking = await Booking.findOne({ phone })
+        .sort({ createdAt: -1 });
+
+      if (!lastBooking) {
+        return res.status(404).json({
+          message: "No booking found with this phone number"
+        });
+      }
+
+      userEmail = lastBooking.email;
+    }
+
+    if (!userEmail || !otp) {
+      return res.status(400).json({
+        message: "Email/Phone and OTP are required"
+      });
+    }
+
+    const record = otpStore[userEmail];
+
+    if (!record) {
+      return res.status(400).json({ message: "OTP not found" });
+    }
+
+    if (Date.now() > record.expiresAt) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    if (record.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    delete otpStore[userEmail];
+
+    const accessToken = jwt.sign(
+      { email: userEmail },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { email: userEmail },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    const bookings = await Booking.find({ email: userEmail }).sort({
+      createdAt: -1
+    });
+
+    if (!bookings.length) {
+      return res.status(404).json({
+        message: "No bookings found"
+      });
+    }
+
+    res.json({
+      success: true,
+      type, 
+      accessToken,
+      refreshToken,
+      bookings
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error verifying ticket",
+      error: error.message
+    });
+  }
+});
+app.post("/refresh-token", (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "No token" });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
+    const newAccessToken = jwt.sign(
+      { email: decoded.email },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "15m" }
+    );
+
+    res.json({ accessToken: newAccessToken });
+
+  } catch (err) {
+    res.status(403).json({ message: "Invalid refresh token" });
+  }
+});
+app.post("/cancel-ticket", verifyToken, async (req, res) => {
+  const { bookingId } = req.body;
+
+  const booking = await Booking.findOne({
+    _id: bookingId,
+    email: req.user.email
+  });
+
+  if (!booking) {
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  const today = new Date();
+  const travelDate = new Date(booking.travelDate);
+
+  if (travelDate <= today) {
+    return res.status(400).json({
+      message: "Cannot cancel past bookings"
+    });
+  }
+
+  booking.status = "Cancelled";
+  await booking.save();
+
+  res.json({ message: "Cancelled successfully" });
+});
+function verifyToken(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: "Invalid token" });
+  }
+}
 /* Admin Side API  */
 
 app.post("/admin/login", async (req, res) => {

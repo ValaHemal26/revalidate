@@ -9,14 +9,26 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-async function sendOTP(to, otp, journey) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
-    to,
-    subject: "Bus Booking OTP Verification",
-    html: `
+async function sendOTP(to, otp, journey, type = "BOOKING") {
+  let htmlContent = "";
+
+  // ✅ TRACK TEMPLATE
+  if (type === "TRACK") {
+    htmlContent = `
       <div style="font-family: Arial; padding: 10px;">
-        <h2 style="color: #333;">🚌 Bus Booking Verification</h2>
+        <h2>🔍 Track Your Booking</h2>
+        <p>Your OTP for tracking ticket:</p>
+        <h1 style="letter-spacing: 5px; color: #28a745;">${otp}</h1>
+        <p>This OTP is valid for 5 minutes.</p>
+      </div>
+    `;
+  }
+
+  // ✅ BOOKING TEMPLATE (your existing one)
+  else {
+    htmlContent = `
+      <div style="font-family: Arial; padding: 10px;">
+        <h2>🚌 Bus Booking Verification</h2>
 
         <p><strong>Name:</strong> ${journey.name}</p>
         <p><strong>Route:</strong> ${journey.source} → ${journey.destination}</p>
@@ -31,7 +43,17 @@ async function sendOTP(to, otp, journey) {
 
         <p>This OTP is valid for 5 minutes.</p>
       </div>
-    `,
+    `;
+  }
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to,
+    subject:
+      type === "TRACK"
+        ? "Track Ticket OTP"
+        : "Bus Booking OTP Verification",
+    html: htmlContent,
   });
 }
 

@@ -54,6 +54,7 @@ export default function Sidebar({ admin }: { admin: any }) {
         <>
           <Link href="/">Home</Link>
           <Link href="/buses">Find Buses</Link>
+          <Link href="/track-ticket">Track Ticket</Link>
         </>
       )}
     </aside>
