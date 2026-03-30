@@ -16,7 +16,7 @@ export default function Dashboard() {
         }
     }
     const latest = bookings[0]; 
-    const isFuture = new Date(latest.travelDate) > new Date();
+    const isFuture = new Date(latest?.travelDate) > new Date();
 
     return (
         <>
