@@ -52,9 +52,10 @@ export default function Sidebar({ admin }: { admin: any }) {
         </>
       ) : (
         <>
-          <Link href="/">Home</Link>
-          <Link href="/buses">Find Buses</Link>
-          <Link href="/track-ticket">Track Ticket</Link>
+          <Link href="/" className={pathname === "/" ? "active" : ""}>Home</Link>
+          <Link href="/buses" className={pathname === "/buses" ? "active" : ""}>Find Buses</Link>
+          <Link href="/track-ticket/login" className={pathname  === "/track-ticket/login" ? "active" : ""}>Track Ticket</Link>
+          <Link href="/admin/login" className={pathname === "/admin/login" ? "active" : ""}>Admin Login</Link>
         </>
       )}
     </aside>

@@ -45,8 +45,12 @@ export default function Header({ admin }: { admin: any }) {
               Find Buses
             </Link>
 
-            <Link href="/about" className={isActive("/about")}>
-              About
+            <Link href="/track-ticket/login" className={isActive("/track-ticket/login")}>
+              Track Ticket
+            </Link>
+
+            <Link href="/admin/login" className={isActive("/admin/login")}>
+              Admin Login
             </Link>
           </>
         )}

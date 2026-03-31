@@ -56,7 +56,7 @@ export default function Login() {
     <>
     <LoaderModal show={loading} message={loadingMessage} />
     <ErrorMessage message={error} /> 
-        
+    <div className="track-ticket-box">
       <h2>Track Your Ticket</h2>
 
       <select
@@ -69,7 +69,7 @@ export default function Login() {
 
       <input
         className="input"
-        placeholder={`Enter ${type}`}
+        placeholder={"Enter " +  type}
         onChange={(e) => setValue(e.target.value)}
       />
 
@@ -86,6 +86,7 @@ export default function Login() {
           <li>Verify OTP to view your booking</li>
         </ul>
       </div>
+    </div>
     </>
   );
 }

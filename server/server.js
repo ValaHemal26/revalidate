@@ -415,7 +415,6 @@ app.post("/track-ticket-request", async (req, res) => {
     let userEmail = email;
     let lastBooking = null;
 
-    // If phone is provided → fetch latest booking
     if (phone) {
       lastBooking = await Booking.findOne({ phone })
         .sort({ createdAt: -1 });
@@ -437,7 +436,7 @@ app.post("/track-ticket-request", async (req, res) => {
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
+    console.log(otp);
     otpStore[userEmail] = {
       otp,
       expiresAt: Date.now() + 5 * 60 * 1000,
