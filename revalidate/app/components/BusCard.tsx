@@ -39,8 +39,7 @@ export default function BusCard({ bus, date, destination, source }: any) {
             </div>
 
             <div className="bus-status">
-              <strong>Status:</strong> {b.status}
-              {b.reason && <p className="reason">{b.reason}</p>}
+              <strong>Status:</strong> {b.status === "NOT_RUNNING" ? "Not Available" : b.status }
             </div>
 
             <div className="bus-schedule">

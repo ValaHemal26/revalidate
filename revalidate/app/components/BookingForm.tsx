@@ -138,7 +138,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
   }
 
   return (
-    <div className="container">
+    <div className="booking-form-container">
       <LoaderModal show={loading} message={loadingMessage} />
       <ErrorMessage message={error} />
 
@@ -164,7 +164,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
           <button
             onClick={() => {
-              if (!selectedSeats.length) return setError("Select seats");
+              if (!selectedSeats.length) return setError("Please Select atleast one Seat to Book Ticket");
               setStep(2);
             }}
           >

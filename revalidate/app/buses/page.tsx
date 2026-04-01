@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Select from "react-select";
 import { searchBuses, fetchBuses } from "../utils/api";
 import BusCard from "../components/BusCard";
-import dynamic from "next/dynamic";
+import upDown from "../assets/images/up-down.png";
 import { LoaderModal } from "../components/LoaderModal";
+import ErrorMessage from "../components/ErrorMessage";
 
 export default function BusesPage() {
   const [allBuses, setAllBuses] = useState<any[]>([]);
@@ -61,6 +62,22 @@ export default function BusesPage() {
       return setError("Source and destination cannot be same");
     }
 
+    const selectedDate = new Date(date);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 1);
+
+    if (selectedDate < today) {
+      return setError("You cannot select a past date");
+    }
+
+    if (selectedDate > maxDate) {
+      return setError("You can only book up to 1 month in advance");
+    }
+
     setError("");
     setLoading(true);
     setLoadingMessage("🔍 Searching buses for your route...");
@@ -87,34 +104,46 @@ export default function BusesPage() {
       setLoading(false);
     }
   }
+  function handleSwap ()  {
+    setSource(destination);
+    setDestination(source);
 
+    setInputValue(destInputValue);
+    setDestInputValue(inputValue);
+  }
   return (
     <div className="search-box">
       <LoaderModal show={loading} message={loadingMessage} />
 
       <h2>Search Buses</h2>
 
-      {error && <p className="error">{error}</p>}
+      {error && <ErrorMessage message={error} />}
 
-      <Select
-        options={inputValue ? filteredOptions : []}
-        value={source}
-        onChange={setSource}
-        onInputChange={(val) => setInputValue(val)}
-        placeholder="Type source..."
-        isSearchable
-        className="search-input"
-      />
+      <div className="location-select-wrapper">
+        <Select
+          options={inputValue ? filteredOptions : []}
+          value={source}
+          onChange={setSource}
+          onInputChange={(val) => setInputValue(val)}
+          placeholder="Type source..."
+          isSearchable
+          className="search-input"
+        />
 
-      <Select
-        options={destInputValue ? filteredDestOptions : []}
-        value={destination}
-        onChange={setDestination}
-        onInputChange={(val) => setDestInputValue(val)}
-        placeholder="Type destination..."
-        isSearchable
-        className="search-input"
-      />
+        <div className="swap-icon" onClick={handleSwap}>
+          <img src={upDown.src} alt="swap" />
+        </div>
+
+        <Select
+          options={destInputValue ? filteredDestOptions : []}
+          value={destination}
+          onChange={setDestination}
+          onInputChange={(val) => setDestInputValue(val)}
+          placeholder="Type destination..."
+          isSearchable
+          className="search-input"
+        />
+      </div>
 
       <input
         type="date"
@@ -128,14 +157,12 @@ export default function BusesPage() {
         Search
       </button>
 
-      {/* ✅ Summary */}
       {hasSearched && source && destination && (
         <div className="summary">
           🧭 {source.label} → {destination.label} | 📅 {date}
         </div>
       )}
 
-      {/* ✅ Results */}
       {!loading && hasSearched && (
         <BusCard
           bus={filteredBuses}

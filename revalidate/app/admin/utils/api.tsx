@@ -1,10 +1,10 @@
-const API_URl = "http://localhost:5000";
+const API_URl = "http://localhost:5000//api/v1/admin";
 /*
 Email: admin@example.com
 Password: admin123
 */
 export async function adminLogin(email: string, password: string) {
-  const res = await fetch(`${API_URl}/admin/login`, {
+  const res = await fetch(`${API_URl}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -29,7 +29,7 @@ export async function fetchDashboard(token) {
 
 export async function fetchBuses(token) {
   if(!token) throw new Error ("Please Provide Authentication Token");
-  const res = await fetch(API_URl + "/admin/buses",{
+  const res = await fetch(API_URl + "/buses",{
     method: "GET",
     headers:{
       'Authorization': "Bearer " + token
@@ -54,7 +54,7 @@ export async function addBus(data: any,token) {
 
 export async function editBus(id: string, data: any,token) {
   if(!token) throw new Error ("Please Provide Authentication Token");
-  const res = await fetch(`${API_URl}/editBus/${id}`, {
+  const res = await fetch(API_URl + "/editBus/" + id, {
     method: "PUT",
     headers: { "Content-Type": "application/json",'Authorization': "Bearer " + token },
     body: JSON.stringify(data),
@@ -77,7 +77,7 @@ export async function deleteBus(id: string,token) {
 
 export async function fetchBookings(token) {
   if(!token) throw new Error ("Please Provide Authentication Token");
-  const res = await fetch(API_URl + "/admin/bookings",{
+  const res = await fetch(API_URl + "/bookings",{
     method:"GET",
     headers:{
       'Authorization': "Bearer " + token
@@ -89,7 +89,7 @@ export async function fetchBookings(token) {
 
 export async function cancelBooking(id: string,token) {
   if(!token) throw new Error ("Please Provide Authentication Token");
-  const res = await fetch(`${API_URl}/admin/cancelBooking/${id}`, { method: "PUT",
+  const res = await fetch(API_URl + "/cancelBooking/" + id, { method: "PUT",
     headers:{
       'Authorization': "Bearer " + token
     }
@@ -100,7 +100,7 @@ export async function cancelBooking(id: string,token) {
 
 export async function getBusById  (id: string,token)  {
   if(!token) throw new Error ("Please Provide Authentication Token");
-  const res = await fetch(`${API_URl}/admin/bus/${id}`,{
+  const res = await fetch(API_URl + "/bus/" + id,{
     method:"GET",
     headers:{
       'Authorization': "Bearer " + token
