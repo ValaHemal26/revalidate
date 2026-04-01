@@ -1,7 +1,7 @@
 import Admin from "../models/admin.js";
 import Booking  from "../models/booking.js";
 import Bus from "../models/bus.js";
-
+import jwt from "jsonwebtoken";
 
 export async function  AdminLogin(req, res)  {
   try {

@@ -1,5 +1,5 @@
 import * as controller from "../controller/admin.controller.mjs";
-import verifyAdminToken from "../helper.js";
+import { verifyAdminToken } from "../helper.js";
 
 export default function admin_routes(apiRouter,){
 

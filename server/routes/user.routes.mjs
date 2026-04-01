@@ -1,5 +1,5 @@
 import * as controller from "../controller/user.controller.mjs";
-import verifyToken from "../helper.js";
+import {verifyToken} from "../helper.js";
 
 export default function user_routes(apiRouter){
 

@@ -1,4 +1,4 @@
-const API_URl = "http://localhost:5000//api/v1/admin";
+const API_URl = "http://localhost:5000/api/v1/admin";
 /*
 Email: admin@example.com
 Password: admin123
@@ -16,7 +16,7 @@ export async function adminLogin(email: string, password: string) {
 export async function fetchDashboard(token) {
 
   if(!token) throw new Error ("Please Provide Authentication Token");
-  const res = await fetch(`${API_URl}/admin/dashboard`,{
+  const res = await fetch(`${API_URl}/dashboard`,{
       method: 'GET',
       headers: {
         "Authorization": "Bearer " + token

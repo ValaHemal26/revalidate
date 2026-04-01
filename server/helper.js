@@ -34,6 +34,7 @@ function verifyToken(req, res, next) {
     res.status(401).json({ message: "Invalid token" });
   }
 }
-
-module.exports = verifyAdminToken;
-module.exports = verifyToken;
+module.exports = {
+  verifyAdminToken,
+  verifyToken
+};

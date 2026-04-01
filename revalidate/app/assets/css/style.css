@@ -573,3 +573,166 @@ button:disabled {
         transform: translateY(0);
     }
 }
+/* =========================
+   RESPONSIVE DESIGN
+========================= */
+
+/* TABLET (≤ 1024px) */
+@media (max-width: 1024px) {
+  .content-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .sidebar a {
+    flex: 1 1 45%;
+    text-align: center;
+  }
+
+  .main-content {
+    padding: 15px;
+  }
+
+  .bus-table th,
+  .bus-table td {
+    padding: 8px;
+    font-size: 14px;
+  }
+}
+
+
+/* MOBILE (≤ 768px) */
+@media (max-width: 768px) {
+
+  /* HEADER */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .nav-links a {
+    margin-left: 0;
+    font-size: 14px;
+  }
+
+  /* HERO */
+  .hero h1 {
+    font-size: 26px;
+  }
+
+  .hero p {
+    font-size: 14px;
+  }
+
+  /* SEARCH BOX */
+  .search-box {
+    width: 100%;
+    padding: 15px;
+  }
+
+  /* LOCATION SELECT */
+  .location-select-wrapper {
+    gap: 10px;
+  }
+
+  .swap-icon {
+    right: 10px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .swap-icon img {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* BUS CARDS */
+  .bus-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .bus-time {
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+  }
+
+  /* TABLE → SCROLL */
+  .bus-table-container {
+    overflow-x: auto;
+  }
+
+  .bus-table {
+    min-width: 600px;
+  }
+
+  /* TRACK TICKET */
+  .track-ticket-box {
+    width: 100%;
+    padding: 20px;
+  }
+
+  /* BOOKING */
+  .booking-page {
+    width: 100%;
+  }
+
+  .seat-layout {
+    grid-template-columns: repeat(6, 35px);
+  }
+}
+
+
+@media (max-width: 480px) {
+
+  .hero h1 {
+    font-size: 22px;
+  }
+
+  .search-bus-btn {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .seat-layout {
+    grid-template-columns: repeat(6, 30px);
+    gap: 6px;
+  }
+
+  .seat-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 10px;
+  }
+
+  .swap-icon {
+    width: 28px;
+    height: 28px;
+    right: 8px;
+  }
+
+  .swap-icon img {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sidebar a {
+    flex: 1 1 100%;
+  }
+}
