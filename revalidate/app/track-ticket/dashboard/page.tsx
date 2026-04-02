@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+
 import  "../../assets/css/style.css";
 import Cookies from "js-cookie";
 import { useState } from "react";
@@ -8,7 +8,7 @@ export default function Dashboard() {
     const cookieData = Cookies.get("bookings");
 
     let bookings = [];
-
+    
     if (cookieData) {
         try {
             bookings = JSON.parse(decodeURIComponent(cookieData));
@@ -16,9 +16,12 @@ export default function Dashboard() {
             console.error("Invalid cookie data", err);
         }
     }
+    
     const latest = bookings[0]; 
     const isFuture = new Date(latest?.travelDate) > new Date();
-    
+    function handleCancelClick(){
+
+    }
     return (
         <>
         <h2>Last Booking</h2>
@@ -35,8 +38,8 @@ export default function Dashboard() {
 
                 {isFuture && (
                     <div className="actions">
-                    <button>Cancel</button>
-                    <button>Update</button>
+                    <button className="btn-cancel" onClick={handleCancelClick}>Cancel Booking</button>
+                    <button>Update Booking</button>
                     </div>
                 )}
                 </>
@@ -46,9 +49,9 @@ export default function Dashboard() {
 
         <button
             className="secondaryBtn"
-            onClick={() => setShowHistory(true)}
+            onClick={() =>  setShowHistory(prev => !prev)}
         >
-            View History
+           {showHistory ? "Hide History" : "View History"}
         </button>
         {showHistory &&
            <div className={"track-ticket-history " + (showHistory ? "show" : "")}>
@@ -67,12 +70,6 @@ export default function Dashboard() {
                 ))}
                 </>
             )}
-                <button
-                    className="secondaryBtn"
-                    onClick={() => setShowHistory(false)}
-                >
-                    Hide History
-                </button>
             </div>  
         }
         </>

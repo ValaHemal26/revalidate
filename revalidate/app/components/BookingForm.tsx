@@ -51,14 +51,14 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
   const totalPrice = price * selectedSeats.length;
 
-  // STEP 2 → SEND OTP
+  
   async function handleSendOtp() {
     if (!name || !email || !phone) {
       return setError("Fill all details");
     }
 
     setLoading(true);
-    setLoadingMessage("Sending OTP...");
+    setLoadingMessage("We've sent an OTP to your email. Please enter it to proceed.");
 
     try {
       const res = await sendOtp(email, {
@@ -74,7 +74,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
         return setError(res?.data?.message || "OTP failed");
       }
 
-      setStep(3);
+      setStep(4);
       setError("");
     } catch {
       setError("Something went wrong");
@@ -83,13 +83,13 @@ export default function BookingForm({ bus, date, source, destination }: any) {
     }
   }
 
-  // STEP 4 → VERIFY OTP
   async function handleVerifyOtp() {
-    if (!otp) return setError("Enter OTP");
+
+    if (!otp) return setError("Please Enter OTP First");
 
     setLoading(true);
     setLoadingMessage("Verifying OTP...");
-
+    await new Promise(resolve => setTimeout(resolve, 3000));
     try {
       const res = await verifyOtp(email, otp);
 
@@ -137,6 +137,66 @@ export default function BookingForm({ bus, date, source, destination }: any) {
     }
   }
 
+  function handleStepClick(stepId: number) {
+    setError("");
+    if(stepId === 0){
+      return setStep(1);
+    }
+
+    if (stepId === 1) {
+      if (!selectedSeats.length) {
+        return setError("Please select at least one seat first");
+      }
+      return setStep(2);
+    }
+
+    if (stepId === 2) {
+      if (!selectedSeats.length) {
+        setStep(1);
+        return setError("Please select seats first");
+      }
+      if (!name || !email || !phone) {
+        setStep(2);
+        return setError("Please fill passenger details first");
+      }
+      return setStep(3);
+    }
+
+    if (stepId === 3) {
+      if (!selectedSeats.length) {
+        setStep(1);
+        return setError("Please select seats first");
+      }
+      if (!name || !email || !phone) {
+        setStep(2);
+        return setError("Please fill passenger details first");
+      }
+      setOtpVerified(false);
+      handleSendOtp();
+      return setStep(4);
+    }
+
+    if (stepId === 4) {
+      if (!selectedSeats.length) {
+        setStep(1);
+        return setError("Please select seats first");
+      }
+      if (!name || !email || !phone) {
+        setStep(2);
+        return setError("Please fill passenger details first");
+      }
+      if (!otpVerified) {
+        setStep(4);
+        return setError("Please verify OTP first");
+      }
+      return setStep(5);
+    }
+  }
+
+  function handleBack() {
+    setError("");
+    setStep((prev) => Math.max(prev - 1, 1));
+  }
   return (
     <div className="booking-form-container">
       <LoaderModal show={loading} message={loadingMessage} />
@@ -144,8 +204,8 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
    
       <div className="stepper">
-        {["Seats", "Details", "Summary", "OTP", "Done"].map((s, i) => (
-          <div key={i} className={step >= i + 1 ? "active" : ""}>
+        {["Select Seats", "Passenger Details", "Review Booking", "OTP Verification", "Confirmation"].map((s, i) => (
+          <div key={i} className={step >= i + 1 ? "active " + i : ""} onClick={ () =>handleStepClick(i )}>
             {s}
           </div>
         ))}
@@ -170,16 +230,25 @@ export default function BookingForm({ bus, date, source, destination }: any) {
           >
             Next
           </button>
+          
         </>
       )}
 
       {step === 2 && (
         <>
-          <input placeholder="Name" onChange={(e) => setName(e.target.value)} />
-          <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-          <input placeholder="Phone" onChange={(e) => setPhone(e.target.value)} />
-
-          <button onClick={handleSendOtp}>Next</button>
+          <input placeholder="Name" value={name ? name : ""} onChange={(e) => setName(e.target.value)} />
+          <input placeholder="Email" value={email ? email : ""}  onChange={(e) => setEmail(e.target.value)} />
+          <input placeholder="Phone" value={phone ? phone : ""}  onChange={(e) => setPhone(e.target.value)} />
+          <div className="button-wrapper">
+            <button onClick={handleBack}>Back</button>
+            <button onClick={() =>{
+              if (!name || !email || !phone) {
+                return setError("Please fill passenger details first");
+              }
+              setStep(3);
+            }}>Next</button>
+           
+          </div>
         </>
       )}
 
@@ -191,8 +260,13 @@ export default function BookingForm({ bus, date, source, destination }: any) {
           <p>{phone}</p>
           <p>Seats: {selectedSeats.join(", ")}</p>
           <p>Total: {totalPrice}</p>
-
-          <button onClick={() => setStep(4)}>Proceed</button>
+          <div className="button-wrapper">
+             <button onClick={handleBack}>Back</button>
+            <button onClick={() =>{
+                handleSendOtp();
+                }}>Proceed</button>
+            
+          </div>
         </>
       )}
 
@@ -202,12 +276,14 @@ export default function BookingForm({ bus, date, source, destination }: any) {
             placeholder="Enter OTP"
             onChange={(e) => setOtp(e.target.value)}
           />
+          <div className="button-wrapper">
+            <button onClick={handleVerifyOtp}>Verify OTP</button>
 
-          <button onClick={handleVerifyOtp}>Verify OTP</button>
-
-          <button disabled={!otpVerified} onClick={handleBooking}>
-            Confirm Booking
-          </button>
+            <button disabled={!otpVerified} onClick={handleBooking}>
+              Confirm Booking
+            </button>
+            <button onClick={handleBack}>Back</button>
+          </div>
         </>
       )}
 

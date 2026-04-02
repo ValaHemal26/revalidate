@@ -17,11 +17,11 @@ mongoose.connect("mongodb://127.0.0.1:27017/busBooking")
     console.log("MongoDB Connected");
 }).catch(err => console.log(err));
 
-/* End User API */
+
 user_routes(apiUserRouter);
 
-/* Admin Side API  */
 admin_routes(apiAdminRouter);
+
 app.use("/api/v1/admin", apiAdminRouter);
 app.use("/api/v1/user", apiUserRouter);
 

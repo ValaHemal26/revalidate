@@ -78,7 +78,7 @@ export default function Login() {
       </button>
 
       <div className="guide">
-        <h4>How it works:</h4>
+        <h3>How it works:</h3>
         <ul>
           <li>Select Email or Phone</li>
           <li>Enter your registered details</li>

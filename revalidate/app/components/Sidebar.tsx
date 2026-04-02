@@ -15,7 +15,7 @@ export default function Sidebar({ admin }: { admin: any }) {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" id="sidebar">
       {admin ? (
         <>
           <Link

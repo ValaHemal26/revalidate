@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (
@@ -10,27 +10,88 @@ export function middleware(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
-
+  
   const token = request.cookies.get("userToken")?.value;
+  const userRefreshToken = request.cookies.get("userRefreshToken")?.value;
   const admin = request.cookies.get("admin")?.value;
-
+  console.log(token ? "Token exists" : "Not Exists");
   if (pathname.startsWith("/track-ticket")) {
-    const isAuthPage =
-      pathname === "/track-ticket/login" ||
-      pathname === "/track-ticket/otp";
+     
+    const authPages = ["/track-ticket/login", "/track-ticket/otp"];
+    const isAuthPage = authPages.includes(pathname);
 
-    if (token && isAuthPage) {
-      return NextResponse.redirect(
-        new URL("/track-ticket/dashboard", request.url)
-      );
+    if (token) {
+      try {
+        const res = await fetch("http://localhost:5000/api/v1/user/verify-token", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          
+          if (isAuthPage) return NextResponse.next();
+
+          const response = NextResponse.redirect(
+            new URL("/track-ticket/login", request.url)
+          );
+          response.cookies.delete("userToken", { path: "/" });
+          response.cookies.delete("userRefreshToken", { path: "/" });
+          return response;
+        }
+
+        if (isAuthPage) {
+          return NextResponse.redirect(
+            new URL("/track-ticket/dashboard", request.url)
+          );
+        }
+
+        return NextResponse.next();
+
+      } catch {
+     
+        if (isAuthPage) return NextResponse.next();
+
+        return NextResponse.redirect(
+          new URL("/track-ticket/login", request.url)
+        );
+      }
     }
 
-    if (!token && !isAuthPage) {
-      return NextResponse.redirect(
-        new URL("/track-ticket/login", request.url)
-      );
+    if (!token) {
+      if (userRefreshToken) {
+        console.log("refreshtoken");
+        try {
+          const res = await fetch("http://localhost:5000/api/v1/user/refresh-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken: userRefreshToken }),
+          });
+
+          if (!res.ok) throw new Error("Refresh failed");
+          const data = await res.json();
+
+          const response = NextResponse.next();
+          response.cookies.set("userToken", data.accessToken, {
+            httpOnly: true,
+            secure: true,
+            path: "/",
+            maxAge: 60 * 15,
+          });
+          return response;
+        } catch {
+          return NextResponse.redirect(
+            new URL("/track-ticket/login", request.url)
+          );
+        }
+      }
+
+      if (isAuthPage) return NextResponse.next();
+      return NextResponse.redirect(new URL("/track-ticket/login", request.url));
     }
   }
+  
 
   if (pathname.startsWith("/admin")) {
     const isAdminAuthPage = pathname === "/admin/login";

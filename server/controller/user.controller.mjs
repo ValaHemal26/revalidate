@@ -411,7 +411,6 @@ export async function TrackTicketSendOTP (req, res) {
       });
     }
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(otp);
     otpStore[userEmail] = {
@@ -419,7 +418,6 @@ export async function TrackTicketSendOTP (req, res) {
       expiresAt: Date.now() + 5 * 60 * 1000,
     };
 
-    // Prepare journey info (safe fallback)
     const journey = lastBooking
       ? {
           name: lastBooking.name,
@@ -431,7 +429,6 @@ export async function TrackTicketSendOTP (req, res) {
         }
       : null;
 
-    // Send OTP (with custom type)
     await sendOTP(userEmail, otp, journey, "TRACK");
 
     res.json({
@@ -581,4 +578,30 @@ export async function CancelTicket (req, res)  {
   await booking.save();
 
   res.json({ message: "Cancelled successfully" });
+}
+
+export function verifyUserToken  (req, res) {
+  try {
+   const token = req.headers.authorization?.split(" ")[1];
+  
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided",
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+    return res.status(200).json({
+      success: true,
+      user: decoded, 
+    });
+  } catch (err) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired token",
+      err
+    });
+  }
 }
