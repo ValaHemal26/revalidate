@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import SeatLayout from "./SeatLayout";
-import { getBus } from "../utils/api";
+import { checkSeatAvailability, getBus } from "../utils/api";
 
 export default function UpdateModal({
     isOpen,
@@ -30,12 +30,11 @@ export default function UpdateModal({
     }
 
     async function fetchSeats(date: string) {
+        console.log("fetch")
         try {
-            const res = await fetch(
-            `http://localhost:5000/api/v1/user/seatAvailability?busId=${booking.busId}&travelDate=${date}&startStop=${booking.startStop}&endStop=${booking.endStop}`
-            );
-            const data = await res.json();
-            setBookedSeats(data.bookedSeats || []);
+            const res = await checkSeatAvailability(booking);
+             
+            setBookedSeats(res.bookedSeats || []);
         } catch (err) {
             console.error(err);
         }

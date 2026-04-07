@@ -155,3 +155,18 @@ export async function getMyBookings() {
     };
   }
 }
+
+export async function checkSeatAvailability(booking) {
+  try {
+        const res = await fetch(API_URL + "/seatAvailability?busId="+ booking.busId +"&travelDate="+ 
+          booking.date + "&startStop=" + booking.startStop + "&endStop=" + booking.endStop
+        );
+       const data = await res.json();
+       return data;
+    } catch (err) {
+       return {
+        success: false,
+        err
+       }
+    }
+}
