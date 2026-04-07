@@ -61,7 +61,7 @@ export async function getBus (id: string)  {
   if (!res.ok) throw new Error(data.message);
 
   return data;
-};
+}
 
 export async function sendOtp(email: string, journey: any) {
   const res = await fetch(API_URL + "/send-otp", {
@@ -108,7 +108,7 @@ export async function setSendTicketOTP(type,value){
 }
 
 export async function verifyTicketOtp(user,otp) {
-  console.log(user.userEmail);
+  
   const res = await fetch(API_URL + "/track-ticket-verify", {
         method: "POST",
         headers: {
@@ -124,4 +124,34 @@ export async function verifyTicketOtp(user,otp) {
 
 }
 
+export async function getMyBookings() {
+  try {
+    const res = await fetch(API_URL + "/my-bookings", {
+      method: "GET",
+      credentials: "include", 
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
+    if (!res.ok) {
+      return {
+        success: false,
+        message: "Failed to fetch bookings",
+        status: res.status,
+      };
+    }
+
+    const data = await res.json();
+
+    return data;
+
+  } catch (error) {
+    console.error("getMyBookings error:", error);
+
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
+  }
+}

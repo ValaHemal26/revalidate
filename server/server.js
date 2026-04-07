@@ -7,7 +7,10 @@ const { default : admin_routes} = require( "./routes/admin.routes.mjs");
 const {default : user_routes} = require ("./routes/user.routes.mjs"); 
 
 dotenv.config();
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}));
 app.use(express.json());
 const apiAdminRouter = express.Router();
 const apiUserRouter = express.Router();

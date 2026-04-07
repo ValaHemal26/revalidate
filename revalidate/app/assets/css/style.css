@@ -448,7 +448,6 @@ button:disabled {
   max-width: 420px;
   margin: auto;
   padding: 25px;
-  text-align: center;
 }
 
 .input, .select {
@@ -576,6 +575,7 @@ button:disabled {
         transform: translateY(0);
     }
 }
+
 .button-wrapper{
   display: flex;
   justify-content: space-between;
@@ -584,11 +584,112 @@ button:disabled {
 .btn-cancel{
   background-color: #f36100;
 }
+
+.skeleton-card {
+  background: #f2f2f2;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: #ddd;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+/* Update Modal */
+
+.update-modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  overflow-y: auto;
+}
+
+.update-modal-title {
+  margin-bottom: 15px;
+}
+
+.update-stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.update-stepper div {
+  flex: 1;
+  text-align: center;
+  font-size: 14px;
+  padding: 5px;
+  border-bottom: 2px solid #ccc;
+}
+
+.update-stepper .active {
+  border-color: #007bff;
+  font-weight: bold;
+}
+
+.update-step {
+  margin-bottom: 20px;  
+}
+
+.update-input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.update-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.update-btn {
+  padding: 8px 12px;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.update-btn.primary {
+  background: #007bff;  
+  color: white;
+}
+
+.update-btn.secondary {
+  background: #ccc; 
+}
+
+.update-btn.cancel {
+  background: red;
+  color: white;
+}
+
 @media (max-width: 1024px) {
   .content-container {
     flex-direction: column;
   }
    .sidebar {
+    z-index: 1;
     position: fixed;     
     top: 0;
     left: 0;

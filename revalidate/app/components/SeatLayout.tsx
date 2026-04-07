@@ -1,6 +1,6 @@
 "use client";
 import "../assets/css/style.css";
-export default function SeatLayout({ seats, selected, setSelected }: any) {
+export default function SeatLayout({ seats, selected, setSelected,bookedSeats }: any) {
   return (
     <div className="seat-layout">
       {Array.from({ length: seats }).map((e, i) => {
@@ -8,13 +8,17 @@ export default function SeatLayout({ seats, selected, setSelected }: any) {
         return (
           <button
             key={seatNumber}
-            className={"seat " + (selected?.includes(seatNumber) ? "selected" : "") + " seat-btn" }
+            className={
+              "seat " +
+              (bookedSeats?.includes(seatNumber) ? "booked " : "") +
+              (selected?.includes(seatNumber) ? "selected " : "") + " seat-btn"
+            }
             onClick={() => {
+              if (bookedSeats?.includes(seatNumber)) return;
               if (selected.includes(seatNumber)) {
     
                 setSelected(selected.filter((s: number) => s !== seatNumber));
               } else {
-                
                 setSelected([...selected, seatNumber]);
               }
             }}

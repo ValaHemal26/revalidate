@@ -22,8 +22,8 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [bookedSeats, setBookedSeats] = useState("");
 
-  // PRICE LOGIC
   function normalize(val: string) {
     return val?.toString().trim().toLowerCase();
   }
@@ -51,7 +51,18 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
   const totalPrice = price * selectedSeats.length;
 
-  
+   async function fetchSeats() {
+        try {
+            const res = await fetch(
+            "http://localhost:5000/api/v1/user/seatAvailability?busId="+ bus._id +"&travelDate=" + date + "&startStop=" + source + "&endStop=" + destination
+            );
+            const data = await res.json();
+            setBookedSeats(data.bookedSeats || []);
+        } catch (err) {
+            console.error(err);
+        }
+  }
+
   async function handleSendOtp() {
     if (!name || !email || !phone) {
       return setError("Fill all details");
@@ -202,7 +213,6 @@ export default function BookingForm({ bus, date, source, destination }: any) {
       <LoaderModal show={loading} message={loadingMessage} />
       <ErrorMessage message={error} />
 
-   
       <div className="stepper">
         {["Select Seats", "Passenger Details", "Review Booking", "OTP Verification", "Confirmation"].map((s, i) => (
           <div key={i} className={step >= i + 1 ? "active " + i : ""} onClick={ () =>handleStepClick(i )}>
@@ -218,8 +228,11 @@ export default function BookingForm({ bus, date, source, destination }: any) {
             seats={bus.totalSeats}
             selected={selectedSeats}
             setSelected={setSelectedSeats}
+            bookedSeats={bookedSeats}
           />
 
+          <p>Per Seat Price: {price}</p>
+          <p>Selected Seat: {selectedSeats.join(",") || 0 }</p>
           <p>Total: {totalPrice}</p>
 
           <button

@@ -15,50 +15,54 @@ export default function Login() {
   
   const router = useRouter();
   async function sendOtp() {
-        if (type === "email") {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(value)) {
-            setError("Please enter a valid email address");
-            return;
-            }
-        }
+      if (type === "email") {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(value)) {
+          setError("Please enter a valid email address");
+          return;
+          }
+      }
 
-        if (type === "phone") {
-            const phoneRegex = /^[0-9]{10}$/;
-            if (!phoneRegex.test(value)) {
-            setError("Please enter a valid 10-digit phone number");
-            return;
-            }
-        }
-        setLoadingMessage("Otp is sent to your email which you enter while booking");
-        setLoading(true);
+      if (type === "phone") {
+          const phoneRegex = /^[0-9]{10}$/;
+          if (!phoneRegex.test(value)) {
+          setError("Please enter a valid 10-digit phone number");
+          return;
+          }
+      }
+      Cookies.remove("userToken", { path: "/track-ticket" });
+      Cookies.remove("userRefreshToken", { path: "/track-ticket" });
+      Cookies.remove("bookings", { path: "/track-ticket" });
+      setLoadingMessage("Otp is sent to your email which you enter while booking");
+      setLoading(true);
+      
+      const res = await setSendTicketOTP(type, value);
+      console.log(res);
+      setLoading(false);
+      setLoadingMessage("");
 
-        const res = await setSendTicketOTP(type, value);
+      if (res?.success) {
+      
+          Cookies.set(
+              "trackUser",
+              JSON.stringify({ type, value,userEmail:res?.email }),
+              { expires: 1 } 
+          );
 
-        setLoading(false);
-        setLoadingMessage("");
-
-        if (res?.success) {
-        
-            Cookies.set(
-                "trackUser",
-                JSON.stringify({ type, value,userEmail:res?.email }),
-                { expires: 1 } 
-            );
-
-            router.push("/track-ticket/otp");
-        } else {
-            setError(res.message);
-        }
-    }   
+          router.push("/track-ticket/otp");
+      } else {
+          setError(res.message);
+      }
+  }   
 
   return (
     <>
     <LoaderModal show={loading} message={loadingMessage} />
-    <ErrorMessage message={error} /> 
+    
     <div className="track-ticket-box">
+      
       <h2>Track Your Ticket</h2>
-
+      <ErrorMessage message={error} /> 
       <select
         onChange={(e) => setType(e.target.value)}
         className="select"

@@ -332,7 +332,7 @@ export async function SendOtp(req, res)  {
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  
+  console.log(otp);
   otpStore[email] = {
     otp,
     expiresAt: Date.now() + 5 * 60 * 1000,
@@ -403,9 +403,19 @@ export async function TrackTicketSendOTP (req, res) {
       }
 
       userEmail = lastBooking.email;
+    }else{
+      lastBooking = await Booking.findOne({ email })
+        .sort({ createdAt: -1 })
+        
+      if (!lastBooking) {
+        return res.status(404).json({
+          message: "No booking found with this Email"
+        });
+      }
     }
 
     if (!userEmail) {
+      
       return res.status(400).json({
         message: "Email or Phone is required"
       });
@@ -434,7 +444,7 @@ export async function TrackTicketSendOTP (req, res) {
     res.json({
       success: true,
       message: "OTP sent successfully",
-      email: userEmail // useful for frontend
+      email: userEmail 
     });
 
   } catch (error) {
@@ -579,7 +589,48 @@ export async function CancelTicket (req, res)  {
 
   res.json({ message: "Cancelled successfully" });
 }
+export async function UpdateBooking(req, res) {
+  try {
+    const { bookingId, travelDate, seatNumber } = req.body;
 
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      email: req.user.email
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status === "Cancelled") {
+      return res.status(400).json({
+        message: "Cannot update cancelled booking"
+      });
+    }
+
+    const today = new Date();
+    if (new Date(booking.travelDate) <= today) {
+      return res.status(400).json({
+        message: "Cannot update past bookings"
+      });
+    }
+
+    // update fields
+    if (travelDate) booking.travelDate = travelDate;
+    if (seatNumber) booking.seatNumber = seatNumber;
+
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: "Booking updated",
+      booking
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+}
 export function verifyUserToken  (req, res) {
   try {
    const token = req.headers.authorization?.split(" ")[1];
@@ -592,7 +643,7 @@ export function verifyUserToken  (req, res) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
+   
     return res.status(200).json({
       success: true,
       user: decoded, 
@@ -602,6 +653,26 @@ export function verifyUserToken  (req, res) {
       success: false,
       message: "Invalid or expired token",
       err
+    });
+  }
+}
+export async function GetMyBookings(req, res) {
+  try {
+    
+    const bookings = await Booking.find({
+      email: req.user.email
+    }).sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      bookings
+    });
+
+  } catch (err) {
+   
+    return res.status(500).json({
+      success: false,
+      message: "Server error"
     });
   }
 }

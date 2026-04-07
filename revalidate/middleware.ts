@@ -12,19 +12,20 @@ export async function middleware(request: NextRequest) {
   }
   
   const token = request.cookies.get("userToken")?.value;
+  
   const userRefreshToken = request.cookies.get("userRefreshToken")?.value;
   const admin = request.cookies.get("admin")?.value;
-  console.log(token ? "Token exists" : "Not Exists");
+  
   if (pathname.startsWith("/track-ticket")) {
      
     const authPages = ["/track-ticket/login", "/track-ticket/otp"];
     const isAuthPage = authPages.includes(pathname);
-
+    console.log(token);
     if (token) {
       try {
         const res = await fetch("http://localhost:5000/api/v1/user/verify-token", {
           method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: "Bearer " + token },
         });
 
         const data = await res.json();
@@ -61,6 +62,7 @@ export async function middleware(request: NextRequest) {
 
     if (!token) {
       if (userRefreshToken) {
+        console.log(userRefreshToken ?? "not");
         console.log("refreshtoken");
         try {
           const res = await fetch("http://localhost:5000/api/v1/user/refresh-token", {
@@ -74,8 +76,6 @@ export async function middleware(request: NextRequest) {
 
           const response = NextResponse.next();
           response.cookies.set("userToken", data.accessToken, {
-            httpOnly: true,
-            secure: true,
             path: "/",
             maxAge: 60 * 15,
           });

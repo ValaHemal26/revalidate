@@ -63,12 +63,6 @@ export default function OTP() {
                 expires: 7,
                 path: "/track-ticket",
             });
-
-            Cookies.set("bookings", JSON.stringify(res.bookings), {
-                expires: 7,
-                path: "/track-ticket",
-            });
-
             router.push("/track-ticket/dashboard");
         } else {
             setError(res.message);

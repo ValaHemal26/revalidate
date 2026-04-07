@@ -20,18 +20,37 @@ function verifyAdminToken  (req, res, next)  {
   }
 }
 function verifyToken(req, res, next) {
-  const token = req.headers.authorization;
+ try {
+    let token;
 
-  if (!token) {
-    return res.status(401).json({ message: "No token provided" });
-  }
+    const authHeader = req.headers.authorization;
 
-  try {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+
+      token = authHeader.split(" ")[1];
+     
+    }
+
+
+    if (!token && req.headers.cookie) {
+      const cookieArr = req.headers.cookie.split(";");
+
+      const tokenCookie = cookieArr.find(c =>
+        c.trim().startsWith("userToken=")
+      );
+
+      if (tokenCookie) {
+        token = tokenCookie.split("=")[1];
+      }
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = decoded;
+   
     next();
-  } catch (err) {
-    res.status(401).json({ message: "Invalid token" });
+  } catch(err) {
+    console.log(err);
+    return res.status(401).json({ success: false,err });
   }
 }
 module.exports = {
