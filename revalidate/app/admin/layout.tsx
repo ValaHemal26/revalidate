@@ -1,5 +1,4 @@
-import { cookies } from 'next/headers';
-import { headers } from 'next/headers';
+import { cookies,headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export default async function AdminLayout({

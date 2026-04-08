@@ -24,6 +24,9 @@ export default function BookingPage() {
   useEffect(() => {
     async function fetchBus () {
       try {
+        if (typeof busId !== "string") {
+          throw new Error("Invalid busId");
+        }
         const res = await getBus(busId);
         setBus(res);
       } catch (err: any) {

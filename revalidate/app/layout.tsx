@@ -5,7 +5,7 @@ import Content from "./components/Content";
 import { cookies } from "next/headers";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // ✅ Get cookie server-side
+ 
   const cookieStore = await cookies();
   const adminCookie = cookieStore.get("admin")?.value;
   const admin = adminCookie ? JSON.parse(adminCookie) : null;

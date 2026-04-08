@@ -22,19 +22,20 @@ function verifyAdminToken  (req, res, next)  {
 function verifyToken(req, res, next) {
  try {
     let token;
-
+    console.log(req);
+    console.log(res);
     const authHeader = req.headers.authorization;
-
+    console.log(authHeader);
     if (authHeader && authHeader.startsWith("Bearer ")) {
 
       token = authHeader.split(" ")[1];
-     
+      console.log(token ?? "not verified");
     }
 
 
     if (!token && req.headers.cookie) {
       const cookieArr = req.headers.cookie.split(";");
-
+      console.log(cookieArr);
       const tokenCookie = cookieArr.find(c =>
         c.trim().startsWith("userToken=")
       );
@@ -46,7 +47,7 @@ function verifyToken(req, res, next) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = decoded;
-   
+  
     next();
   } catch(err) {
     console.log(err);

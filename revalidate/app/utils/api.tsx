@@ -1,4 +1,6 @@
 const API_URL = "http://localhost:5000/api/v1/user";
+import Cookies from "js-cookie";
+const refreshtoken = Cookies.get("userRefreshToken");
 
 export async function searchBuses(source: string, destination: string, date: string) {
   const res = await fetch(
@@ -124,15 +126,28 @@ export async function verifyTicketOtp(user,otp) {
 
 }
 
-export async function getMyBookings() {
+export async function getMyBookings(token, page = 1, limit = 5) {
+ 
   try {
-    const res = await fetch(API_URL + "/my-bookings", {
-      method: "GET",
-      credentials: "include", 
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    if (!token) {
+      const refreshRes = await getNewAccessToken();
+
+      if (!refreshRes.success) {
+        return refreshRes;
+      }
+
+      token = refreshRes.token;
+    }
+    const res = await fetch(
+      API_URL + "/my-bookings?page=" + page + "&limit=" + limit,
+      {
+        method: "GET",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!res.ok) {
       return {
@@ -142,24 +157,20 @@ export async function getMyBookings() {
       };
     }
 
-    const data = await res.json();
-
-    return data;
+    return await res.json();
 
   } catch (error) {
-    console.error("getMyBookings error:", error);
-
-    return {
-      success: false,
-      message: "Something went wrong. Please try again.",
-    };
+      return {
+        success: false,
+        message: error.message || "Something went wrong. Please try again.",
+      };
   }
 }
 
-export async function checkSeatAvailability(booking) {
+export async function checkSeatAvailability(booking,date) {
   try {
         const res = await fetch(API_URL + "/seatAvailability?busId="+ booking.busId +"&travelDate="+ 
-          booking.date + "&startStop=" + booking.startStop + "&endStop=" + booking.endStop
+          date + "&startStop=" + booking.startStop + "&endStop=" + booking.endStop
         );
        const data = await res.json();
        return data;
@@ -169,4 +180,76 @@ export async function checkSeatAvailability(booking) {
         err
        }
     }
+}
+
+async function getNewAccessToken() {
+  try {
+    if (!refreshtoken) {
+      throw new Error("Refresh Token Not found");
+    }
+
+    const res = await fetch(API_URL + "/refresh-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        refreshToken: refreshtoken,
+      }),
+    });
+
+    if (!res.ok) {
+      return {
+        success: false,
+        status: res.status,
+        message: "Failed to refresh token",
+      };
+    }
+
+    const data = await res.json();
+
+    // ✅ Set cookie with 15 min expiry
+    document.cookie = `userToken=${data.accessToken}; max-age=900; path=/`;
+
+    return {
+      success: true,
+      token: data.accessToken,
+    };
+
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+
+export async function updateBooking(token, updatedData) {
+   if (!token) {
+    
+    const refreshRes = await getNewAccessToken();
+
+    if (!refreshRes.success) {
+      return refreshRes;
+    }
+
+    token = refreshRes.token;
+  }
+  const res = await fetch(API_URL + "/update-booking", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updatedData),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to update booking");
+  }
+
+  return data;
 }

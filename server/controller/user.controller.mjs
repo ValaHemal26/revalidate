@@ -2,6 +2,7 @@ import sendOTP from "../models/sendMail.js";
 import Bus from "../models/bus.js";
 import Booking from "../models/booking.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export async function SearchBuses (req, res)  {
   try {
@@ -259,29 +260,36 @@ export async function BookSeat (req, res)  {
 export async function CheckSeatAvailability (req, res)  {
   try {
     const { busId, travelDate, startStop, endStop } = req.query;
+    const today = new Date().toISOString().split("T")[0];
 
+    if (travelDate < today) {
+      return res.status(400).json({
+        message: "Cannot select past date"
+      });
+    }
     const bus = await Bus.findById(busId);
     if (!bus) {
       return res.status(404).json({ message: "Bus not found" });
     }
 
     const stops = bus.routeStops;
+ 
+    const normalizedStops = stops.map(s => s.toLowerCase());
 
-    const startIndex = stops.indexOf(startStop);
-    const endIndex = stops.indexOf(endStop);
-
+    const startIndex = normalizedStops.indexOf(startStop.toLowerCase());
+    const endIndex = normalizedStops.indexOf(endStop.toLowerCase());
+   
     const bookings = await Booking.find({
-      busId,
+      busId: new mongoose.Types.ObjectId(busId),
       travelDate,
       status: "Booked"
     });
-
+  
     let bookedSeats = [];
-
+    
     for (let booking of bookings) {
-      const existingStart = stops.indexOf(booking.startStop);
-      const existingEnd = stops.indexOf(booking.endStop);
-
+      const existingStart = normalizedStops.indexOf(booking.startStop.toLowerCase());
+      const existingEnd = normalizedStops.indexOf(booking.endStop.toLowerCase());
       const isConflict =
         (startIndex < existingEnd) &&
         (endIndex > existingStart);
@@ -589,15 +597,16 @@ export async function CancelTicket (req, res)  {
 
   res.json({ message: "Cancelled successfully" });
 }
+
 export async function UpdateBooking(req, res) {
   try {
     const { bookingId, travelDate, seatNumber } = req.body;
-
+    
     const booking = await Booking.findOne({
       _id: bookingId,
       email: req.user.email
     });
-
+    
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -615,7 +624,6 @@ export async function UpdateBooking(req, res) {
       });
     }
 
-    // update fields
     if (travelDate) booking.travelDate = travelDate;
     if (seatNumber) booking.seatNumber = seatNumber;
 
@@ -628,9 +636,11 @@ export async function UpdateBooking(req, res) {
     });
 
   } catch (err) {
+    console.log(err);
     res.status(500).json({ message: "Server error" });
   }
 }
+
 export function verifyUserToken  (req, res) {
   try {
    const token = req.headers.authorization?.split(" ")[1];
@@ -656,20 +666,34 @@ export function verifyUserToken  (req, res) {
     });
   }
 }
+
 export async function GetMyBookings(req, res) {
   try {
-    
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
+    const skip = (page - 1) * limit;
+
+    const total = await Booking.countDocuments({
+      email: req.user.email
+    });
+
     const bookings = await Booking.find({
       email: req.user.email
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({
       success: true,
-      bookings
+      bookings,
+      total,
+      page,
+      pages: Math.ceil(total / limit)
     });
 
   } catch (err) {
-   
     return res.status(500).json({
       success: false,
       message: "Server error"

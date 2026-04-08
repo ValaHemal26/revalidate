@@ -1,149 +1,205 @@
 "use client";
 
-import  "../../assets/css/style.css";
-import { useState,useEffect } from "react";
-import { getMyBookings } from "../../utils/api";
+import "../../assets/css/style.css";
+import { useState, useEffect } from "react";
+import { getMyBookings,updateBooking } from "../../utils/api";
 import UpdateModal from "../../components/UpdateModal";
 import Cookies from "js-cookie";
+import { SkeletonCards } from "../../components/SkeletonCards";
 
 export default function Dashboard() {
-    const [showHistory,setShowHistory] = useState(false);
-    const [bookings, setBookings] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const token = Cookies.get("userToken");
 
-    const [showUpdate, setShowUpdate] = useState(false);
-    const [selectedBooking, setSelectedBooking] = useState(null);
+  const [latestBooking, setLatestBooking] = useState(null);
+  const [latestLoading, setLatestLoading] = useState(true);
+
+  const [historyState, setHistoryState] = useState({
+    bookings: [],
+    page: 1,
+    pages: 1,
+    loading: true,
+  });
+
+  const [uiState, setUiState] = useState({
+    showHistory: false,
+    updateModal: {
+      open: false,
+      booking: null,
+    },
+  });
 
     useEffect(() => {
-        async function fetchBookings() {
-        const res = await getMyBookings();
+        async function fetchHistory() {
+            setHistoryState(prev => ({ ...prev, loading: true }));
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const res = await getMyBookings(token, historyState.page, 5);
 
             if (res.success) {
-                setBookings(res.bookings);
+                if(historyState.page == 1){
+                    setLatestBooking(res.bookings[0]);
+                }
+                setHistoryState(prev => ({
+                ...prev,
+                bookings: res.bookings,
+                pages: res.pages,
+                loading: false,
+                }));
             }
-
-            setLoading(false);
+            setLatestLoading(false);
+            setHistoryState(prev => ({...prev,loading:false}));
         }
 
-        fetchBookings();
-    }, []);
+        fetchHistory();
+    }, [historyState.page]);
 
-    const token = Cookies.get("token");
-    console.log(token);
-    const latest = bookings[0]; 
-    const isFuture = new Date(latest?.travelDate) > new Date();
-    const isActive = latest?.status === "Booked";
-    async function handleUpdate(updatedData: any) {
-        console.log(updatedData);
+  const latest = latestBooking;
+  const isFuture = new Date(latest?.travelDate) > new Date();
+  const isActive = latest?.status === "Booked";
+
+    async function handleUpdate(updatedData) {
+       
         try {
-            const res = await fetch("http://localhost:5000/api/v1/user/update-booking", {
-                method: "POST",
-                headers: {
-                    'Authorization': "Bearer " + token,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(updatedData)
-            });
+            
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            const data = await updateBooking(token, updatedData);
 
-            const data = await res.json();
+            if (latest?._id === updatedData.bookingId) {
+                setLatestBooking(prev => ({
+                    ...prev,
+                    travelDate: updatedData.travelDate,
+                    seatNumber: updatedData.seatNumber,
+                }));
 
-            if (!res.ok) {
-                alert(data.message);
-                return;
+                setUiState(prev => ({
+                    ...prev,
+                    updateModal: { open: false, booking: null },
+                }));
             }
 
-            setBookings(prev =>
-                prev.map(b =>
+            setHistoryState(prev => ({
+                ...prev,
+                bookings: prev.bookings.map(b =>
                     b._id === updatedData.bookingId
-                    ? {
-                        ...b,
-                        travelDate: updatedData.travelDate,
-                        seatNumber: updatedData.seatNumber
-                        }
+                    ? { ...b, ...updatedData }
                     : b
-                )
-            );
+                ),
+            }));
 
         } catch (err) {
-            console.error(err);
-            alert("Something went wrong");
+            alert(err.message);
         }
     }
+  console.log(uiState);
+  console.log(uiState.updateModal.booking);
+  return (
+    <>
+      <UpdateModal
+        isOpen={uiState.updateModal.open}
+        onClose={() =>
+          setUiState(prev => ({
+            ...prev,
+            updateModal: { open: false, booking: null },
+          }))
+        }
+        booking={uiState.updateModal.booking}
+        onUpdate={handleUpdate}
+      />
 
-    return (
-        <>
-            <UpdateModal
-                isOpen={showUpdate}
-                onClose={() => setShowUpdate(false)}
-                booking={selectedBooking}
-                onUpdate={handleUpdate}
-            />
-            <h2>Last Booking</h2>
-            
-            {loading ? (
-                <>
-                <div className="skeleton-card">
-                    <div className="skeleton-line"></div>
-                    <div className="skeleton-line short"></div>
-                </div>
-                <div className="skeleton-card">
-                    <div className="skeleton-line"></div>
-                    <div className="skeleton-line short"></div>
-                </div>
-                </>
-            ) : (
-                <>
-                    <div className="card">
-                        {bookings.length === 0 ? (
-                            <p>No bookings found</p>
-                        ) : (
-                            <>
-                            <p>{latest?.startStop} → {latest?.endStop}</p>
-                            <p>Date: {latest?.travelDate}</p>
-                            <p>Seat: {latest?.seatNumber}</p>
+      <h2>Last Booking</h2>
 
-                            {isFuture && isActive && (
-                                <div className="actions">
-                                    <button className="btn-cancel" >Cancel Booking</button>
-                                    <button onClick={() => {
-                                        setSelectedBooking(latest);
-                                        setShowUpdate(true);
-                                        }}>
-                                        Update Booking
-                                    </button>
-                                </div>
-                            )}
-                            </>
-                        )}
-                    </div>
-                
-                    <button
-                        className="secondaryBtn"
-                        onClick={() =>  setShowHistory(prev => !prev)}
-                    >
-                    {showHistory ? "Hide History" : "View History"}
-                    </button>
-                    {showHistory &&
-                    <div className={"track-ticket-history " + (showHistory ? "show" : "")}>
+      {latestLoading ? (
+        <SkeletonCards count={1} />
+      ) : (
+        <div className="latest-card">
+          {!latest ? (
+            <p>No bookings found</p>
+          ) : (
+            <>
+              <p>{latest.startStop} → {latest.endStop}</p>
+              <p>Date: {latest.travelDate}</p>
+              <p>Seat: {latest.seatNumber}</p>
 
-                            <h2>Booking History</h2>
-                        {bookings.length === 0 ? (
-                            <p>No bookings found</p>
-                        ) : (
-                            <>
-                            {bookings.map((b) => (
-                                <div key={b?._id} className="card">
-                                <p>{b?.startStop} → {b?.endStop}</p>
-                                <p>{b?.travelDate}</p>
-                                <p>Status: {b?.status}</p>
-                                </div>
-                            ))}
-                            </>
-                        )}
-                    </div>  
+              {isFuture && isActive && (
+                <div className="actions">
+                  <button className="btn-cancel">Cancel Booking</button>
+                  <button
+                    onClick={() =>
+                      setUiState(prev => ({
+                        ...prev,
+                        updateModal: { open: true, booking: latest },
+                      }))
                     }
-                </>
-            )}
-        </>
-    );
+                  >
+                    Update Booking
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <button
+        className="secondaryBtn"
+        onClick={() =>{
+                setUiState(prev => ({
+                    ...prev,
+                    showHistory: !prev.showHistory,
+                }))
+            }
+        }
+      >
+        {uiState.showHistory ? "Hide History" : "View History"}
+      </button>
+
+      {uiState.showHistory && (
+        <div className="track-ticket-history show">
+          <h2>Booking History</h2>
+
+          {historyState.loading ? (
+            <SkeletonCards count={5} />
+          ) : historyState.bookings.length === 0 ? (
+            <p>No bookings found</p>
+          ) : (
+            <>
+              {historyState.bookings.map(b => (
+                <div key={b._id} className="card">
+                  <p>{b.startStop} → {b.endStop}</p>
+                  <p>{b.travelDate}</p>
+                  <p>Status: {b.status}</p>
+                </div>
+              ))}
+
+              <div className="pagination">
+                <button
+                  disabled={historyState.page === 1}
+                  onClick={() =>
+                    setHistoryState(prev => ({
+                      ...prev,
+                      page: prev.page - 1,
+                    }))
+                  }
+                >
+                  Prev
+                </button>
+
+                <button
+                  disabled={historyState.page === historyState.pages}
+                  onClick={() =>
+                    setHistoryState(prev => ({
+                      ...prev,
+                      page: prev.page + 1,
+                    }))
+                  }
+                >
+                  Next
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
 }

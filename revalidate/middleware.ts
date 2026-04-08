@@ -37,8 +37,8 @@ export async function middleware(request: NextRequest) {
           const response = NextResponse.redirect(
             new URL("/track-ticket/login", request.url)
           );
-          response.cookies.delete("userToken", { path: "/" });
-          response.cookies.delete("userRefreshToken", { path: "/" });
+          response.cookies.delete("userToken");
+          response.cookies.delete("userRefreshToken");
           return response;
         }
 
@@ -62,8 +62,7 @@ export async function middleware(request: NextRequest) {
 
     if (!token) {
       if (userRefreshToken) {
-        console.log(userRefreshToken ?? "not");
-        console.log("refreshtoken");
+     
         try {
           const res = await fetch("http://localhost:5000/api/v1/user/refresh-token", {
             method: "POST",

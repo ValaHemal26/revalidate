@@ -103,7 +103,7 @@ export default function OTP() {
                 <input
                     key={i}
                     id={"otp-" + i}
-                    maxLength="1"
+                    maxLength={1}  
                     className="otpInput"
                     onChange={(e) => handleChange(e.target.value, i)}
                 />
