@@ -16,7 +16,7 @@ export default function UpdateModal({
     const [newDate, setNewDate] = useState("");
     const [selectedSeats, setSelectedSeats] = useState([]);
     const [bookedSeats, setBookedSeats] = useState([]);
-        
+       
     useEffect(() => {
         if (isOpen && booking) {
             setStep(1);
@@ -28,10 +28,10 @@ export default function UpdateModal({
         }
     }, [isOpen,booking]);
 
-            async function fetchBus() {
-            const data = await getBus(booking.busId);
-            setBus(data);
-        }
+    async function fetchBus() {
+        const data = await getBus(booking.busId);
+        setBus(data);
+    }
 
     async function fetchSeats(date) {
         try {

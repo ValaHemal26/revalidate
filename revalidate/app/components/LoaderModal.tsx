@@ -10,13 +10,11 @@ export function LoaderModal({
   if (!show) return null;
 
   return (
-    <div className="overlay">
+    <div className="overlay-modal overlay">
       <div className="modal">
         <div className="spinner" />
         <p>{message}</p>
       </div>
-
-     
     </div>
   );
 }

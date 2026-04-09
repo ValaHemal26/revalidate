@@ -1,7 +1,7 @@
 "use client";
 import "../assets/css/style.css";
 export default function SeatLayout({ seats, selected, setSelected,bookedSeats }: any) {
-  
+  console.log(bookedSeats);
   return (
     <>
     <div className="seat-legend">

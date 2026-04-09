@@ -253,3 +253,22 @@ export async function updateBooking(token, updatedData) {
 
   return data;
 }
+
+export async function cancelBooking(token, bookingId) {
+  const res = await fetch(API_URL +"/cancel-booking", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bookingId }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Cancel failed");
+  }
+
+  return data;
+}

@@ -1,99 +1,168 @@
 "use client";
 
 import "../../assets/css/style.css";
-import { useState, useEffect } from "react";
-import { getMyBookings,updateBooking } from "../../utils/api";
+import { useState, useEffect,useMemo } from "react";
+import { getMyBookings,updateBooking,cancelBooking } from "../../utils/api";
 import UpdateModal from "../../components/UpdateModal";
+import {LoaderModal } from "../../components/LoaderModal"; "../../components/LoaderModal";
 import Cookies from "js-cookie";
+import CancelModal from "../../components/CancelModal";
+import ErrorMessage from "../../components/ErrorMessage"; 
 import { SkeletonCards } from "../../components/SkeletonCards";
 
+
 export default function Dashboard() {
-  const token = Cookies.get("userToken");
+      const token = Cookies.get("userToken");
 
-  const [latestBooking, setLatestBooking] = useState(null);
-  const [latestLoading, setLatestLoading] = useState(true);
+      const [upcomingTrips, setUpcomingTrips] = useState({
+        trips: [],
+        loading: true,
+      });
+      const [UpdateBookingLoading, setUpdateBookingLoading] = useState(false);
+      const [CancelBookingLoading, setCancelBookingLoading] = useState(false);
+      const [error, setError] = useState("");
 
-  const [historyState, setHistoryState] = useState({
-    bookings: [],
-    page: 1,
-    pages: 1,
-    loading: true,
-  });
+      const [filters, setFilters] = useState({
+        status: "ALL",
+        fromDate: "",
+        toDate: "",
+      });
 
-  const [uiState, setUiState] = useState({
-    showHistory: false,
-    updateModal: {
-      open: false,
-      booking: null,
-    },
-  });
+      const [historyState, setHistoryState] = useState({
+        bookings: [],
+        page: 1,
+        pages: 1,
+        loading: true,
+      });
 
-    useEffect(() => {
-        async function fetchHistory() {
-            setHistoryState(prev => ({ ...prev, loading: true }));
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const res = await getMyBookings(token, historyState.page, 5);
+      const [uiState, setUiState] = useState({
+        showHistory: false,
+        updateModal: {
+          open: false,
+          booking: null,
+        },
+        cancelModal: {
+          open: false,
+          bookingId: null
+        },
+      });
+      const today = new Date();
+      var  upcomingBookings = useMemo(() => {
+        return upcomingTrips.trips.filter(
+          (b) =>
+            b.status === "Booked" &&
+            new Date(b.travelDate) >= today
+        );
+      }, [upcomingTrips.trips]);
+      
+      const filteredHistory = useMemo(() => {
+        return historyState.bookings.filter((b) => {
+          const travelDate = new Date(b.travelDate);
 
-            if (res.success) {
-                if(historyState.page == 1){
-                    setLatestBooking(res.bookings[0]);
-                }
-                setHistoryState(prev => ({
-                ...prev,
-                bookings: res.bookings,
-                pages: res.pages,
-                loading: false,
-                }));
-            }
-            setLatestLoading(false);
-            setHistoryState(prev => ({...prev,loading:false}));
-        }
+          const matchStatus =
+            filters.status === "ALL" || b.status === filters.status;
 
-        fetchHistory();
-    }, [historyState.page]);
+          const matchFrom =
+            !filters.fromDate ||
+            travelDate >= new Date(filters.fromDate);
 
-  const latest = latestBooking;
-  const isFuture = new Date(latest?.travelDate) > new Date();
-  const isActive = latest?.status === "Booked";
+          const matchTo =
+            !filters.toDate ||
+            travelDate <= new Date(filters.toDate);
 
-    async function handleUpdate(updatedData) {
-       
+          return matchStatus && matchFrom && matchTo;
+        });
+      }, [historyState.bookings, filters]);
+
+      useEffect(() => {
+          async function fetchHistory() {
+              setHistoryState(prev => ({ ...prev, loading: true }));
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              const res = await getMyBookings(token, historyState.page, 5);
+
+              if (res.success) {
+                  if(historyState.page === 1){
+                      setUpcomingTrips(prev => ({...prev,trips:res.bookings}));
+                  }
+                  setHistoryState(prev => ({
+                    ...prev,
+                    bookings: res.bookings,
+                    pages: res.pages,
+                    loading: false,
+                  }));
+              }else{
+                 setError(res.message || "Something went wrong");
+              }
+              setUpcomingTrips(prev => ({...prev,loading:false}));
+              setHistoryState(prev => ({...prev,loading:false}));
+          }
+
+          fetchHistory();
+      }, [historyState.page]);
+    
+    
+      async function handleUpdate(updatedData) {
+        
+          try {
+              setUpdateBookingLoading(true);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              const data = await updateBooking(token, updatedData);
+          
+              setUiState(prev => ({
+                  ...prev,
+                  updateModal: { open: false, booking: null },
+              }));
+              
+              setHistoryState(prev => ({
+                  ...prev,
+                  bookings: prev.bookings.map(b =>
+                      b._id === updatedData.bookingId
+                      ? { ...b, ...updatedData }
+                      : b
+                  ),
+              }));
+
+          } catch (err) {
+              alert(err.message);
+          }finally{
+            setUpdateBookingLoading(false);
+          }
+      }
+
+      async function handleCancel(bookingId) {
         try {
-            
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            const data = await updateBooking(token, updatedData);
+          setCancelBookingLoading(true);
+          await new Promise(resolve => setTimeout(resolve, 1500));
 
-            if (latest?._id === updatedData.bookingId) {
-                setLatestBooking(prev => ({
-                    ...prev,
-                    travelDate: updatedData.travelDate,
-                    seatNumber: updatedData.seatNumber,
-                }));
+          await cancelBooking(token, bookingId);
 
-                setUiState(prev => ({
-                    ...prev,
-                    updateModal: { open: false, booking: null },
-                }));
-            }
+        
+          setHistoryState(prev => ({
+            ...prev,
+            bookings: prev.bookings.map(b =>
+              b._id === bookingId ? { ...b, status: "Cancelled" } : b
+            ),
+          }));
 
-            setHistoryState(prev => ({
-                ...prev,
-                bookings: prev.bookings.map(b =>
-                    b._id === updatedData.bookingId
-                    ? { ...b, ...updatedData }
-                    : b
-                ),
-            }));
+          setUiState(prev => ({
+            ...prev,
+            cancelModal: { open: false, bookingId: null },
+          }));
 
         } catch (err) {
-            alert(err.message);
+          alert(err.message);
+        } finally {
+          setCancelBookingLoading(false);
         }
-    }
-  console.log(uiState);
-  console.log(uiState.updateModal.booking);
+      }
+        
+
   return (
     <>
+      <ErrorMessage message={error} />
+      <LoaderModal show={UpdateBookingLoading} message="Updating Your Booking..." />
+      <LoaderModal show={CancelBookingLoading} message="Cancelling Your Booking..." />
       <UpdateModal
         isOpen={uiState.updateModal.open}
         onClose={() =>
@@ -106,38 +175,55 @@ export default function Dashboard() {
         onUpdate={handleUpdate}
       />
 
-      <h2>Last Booking</h2>
+      <CancelModal
+        isOpen={uiState.cancelModal.open}
+        bookingId={uiState.cancelModal.bookingId}
+        onClose={() =>
+          setUiState(prev => ({
+            ...prev,
+            cancelModal: { open: false, bookingId: null },
+          }))
+        }
+        onConfirm={handleCancel}
+      />
+      <h2>Upcoming Trips</h2>
 
-      {latestLoading ? (
-        <SkeletonCards count={1} />
-      ) : (
-        <div className="latest-card">
-          {!latest ? (
-            <p>No bookings found</p>
-          ) : (
-            <>
-              <p>{latest.startStop} → {latest.endStop}</p>
-              <p>Date: {latest.travelDate}</p>
-              <p>Seat: {latest.seatNumber}</p>
+      {upcomingTrips.loading ? (
+          <SkeletonCards count={2} />
+        ) : upcomingBookings.length === 0 ? (
+          <p className="card">No upcoming trips</p>
+        ):( upcomingBookings.map((b) => (
+          <div key={b._id} className="card highlight">
+            <p>{b.startStop} → {b.endStop}</p>
+            <p>Date: {b.travelDate}</p>
+            <p>Seat: {b.seatNumber}</p>
 
-              {isFuture && isActive && (
-                <div className="actions">
-                  <button className="btn-cancel">Cancel Booking</button>
-                  <button
-                    onClick={() =>
-                      setUiState(prev => ({
-                        ...prev,
-                        updateModal: { open: true, booking: latest },
-                      }))
-                    }
-                  >
-                    Update Booking
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            <div className="actions">
+              <button
+                className="btn-cancel"
+                onClick={() =>
+                  setUiState((prev) => ({
+                    ...prev,
+                    cancelModal: { open: true, bookingId: b._id },
+                  }))
+                }
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() =>
+                  setUiState((prev) => ({
+                    ...prev,
+                    updateModal: { open: true, booking: b },
+                  }))
+                }
+              >
+                Reschedule
+              </button>
+            </div>
+          </div>
+        ))
       )}
 
       <button
@@ -160,42 +246,89 @@ export default function Dashboard() {
           {historyState.loading ? (
             <SkeletonCards count={5} />
           ) : historyState.bookings.length === 0 ? (
-            <p>No bookings found</p>
+            <p className="card">No bookings found</p>
           ) : (
             <>
-              {historyState.bookings.map(b => (
+              <h3>Filters</h3>
+              <div className="filters">
+                <select
+                  value={filters.status}
+                  onChange={(e) =>
+                    setFilters({ ...filters, status: e.target.value })
+                  }
+                >
+                  <option value="ALL">All</option>
+                  <option value="Booked">Booked</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+
+                <input
+                  type="date"
+                  onChange={(e) =>
+                    setFilters({ ...filters, fromDate: e.target.value })
+                  }
+                />
+
+                <input
+                  type="date"
+                  onChange={(e) =>
+                    setFilters({ ...filters, toDate: e.target.value })
+                  }
+                />
+
+                <button
+                  onClick={() =>
+                    setFilters({ status: "ALL", fromDate: "", toDate: "" })
+                  }
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="applied-filters">
+                <p><strong>Applied Filters:</strong></p>
+                <ul>
+                  {filters.status !== "ALL" && <li>Status: {filters.status}</li>}
+                  {filters.fromDate && <li>From: {filters.fromDate}</li>}
+                  {filters.toDate && <li>To: {filters.toDate}</li>}
+                  {filters.status === "ALL" && !filters.fromDate && !filters.toDate && (
+                    <li>None</li>
+                  )}
+                </ul>
+              </div>
+              {filteredHistory.map(b => (
                 <div key={b._id} className="card">
                   <p>{b.startStop} → {b.endStop}</p>
                   <p>{b.travelDate}</p>
                   <p>Status: {b.status}</p>
                 </div>
               ))}
+              {filteredHistory.length > 0 && (
+                <div className="pagination">
+                  <button
+                    disabled={historyState.page === 1}
+                    onClick={() =>
+                      setHistoryState(prev => ({
+                        ...prev,
+                        page: prev.page - 1,
+                      }))
+                    }
+                  >
+                    Prev
+                  </button>
 
-              <div className="pagination">
-                <button
-                  disabled={historyState.page === 1}
-                  onClick={() =>
-                    setHistoryState(prev => ({
-                      ...prev,
-                      page: prev.page - 1,
-                    }))
-                  }
-                >
-                  Prev
-                </button>
-
-                <button
-                  disabled={historyState.page === historyState.pages}
-                  onClick={() =>
-                    setHistoryState(prev => ({
-                      ...prev,
-                      page: prev.page + 1,
-                    }))
-                  }
-                >
-                  Next
-                </button>
-              </div>
+                  <button
+                    disabled={historyState.page === historyState.pages}
+                    onClick={() =>
+                      setHistoryState(prev => ({
+                        ...prev,
+                        page: prev.page + 1,
+                      }))
+                    }
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

@@ -460,7 +460,7 @@ input, button {
   font-weight: bold;
   color: #007bff;
 }
-
+select,
 input {
   width: 100%;
   margin: 8px 0;
@@ -598,6 +598,14 @@ button:disabled {
     transform: translateY(15px);
     animation: fadeSlideIn 0.5s ease forwards;
 }
+.highlight {
+  border-left: 5px solid #4caf50;
+}
+.filters {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+}
 
 .card:nth-child(1) { animation-delay: 0.2s; }
 .card:nth-child(2) { animation-delay: 0.3s; }
@@ -708,7 +716,7 @@ button:disabled {
   padding: 8px;
   margin-top: 8px;
 }
-
+.cancel-actions,
 .update-actions {
   display: flex;
   justify-content: space-between;
@@ -726,11 +734,11 @@ button:disabled {
   background: #007bff;  
   color: white;
 }
-
+.btn.secondary,
 .update-btn.secondary {
   background: #ccc; 
 }
-
+.btn.danger,  
 .update-btn.cancel {
   background: red;
   color: white;
@@ -857,11 +865,23 @@ button:disabled {
   .seat-layout {
     grid-template-columns: repeat(6, 35px);
   }
+
+  .filters{
+    flex-direction: column;
+    gap: 0;
+  }
+  .filters input,
+  .filters select{
+    margin: 2px;
+  }
 }
 
 
 @media (max-width: 480px) {
 
+  .track-ticket-container{
+    padding: 0;
+  }
   .hero h1 {
     font-size: 22px;
   }
@@ -896,6 +916,7 @@ button:disabled {
     width: auto ;
   }
 }
+
 .overlay {
   position: fixed ;
   top: 0;
@@ -907,6 +928,9 @@ button:disabled {
   justify-content: center;
   align-items: center;
   z-index:  999;
+}
+.overlay-modal {
+  z-index:  99999 !important;
 }
 .modal {
   background: #fff;
@@ -958,4 +982,8 @@ button:disabled {
 
 .pagination span {
   font-weight: 500;
+}
+.applied-filters{
+    display: flex;
+    justify-content: space-between;
 }

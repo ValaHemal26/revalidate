@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ErrorMessage from "../components/ErrorMessage";
 import { LoaderModal } from "../components/LoaderModal";
 import SeatLayout from "../components/SeatLayout";
-import { sendOtp, verifyOtp, bookSeat } from "../utils/api";
+import { sendOtp, verifyOtp, bookSeat,checkSeatAvailability } from "../utils/api";
 
 export default function BookingForm({ bus, date, source, destination }: any) {
   const [step, setStep] = useState(1);
@@ -22,7 +22,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
-  const [bookedSeats, setBookedSeats] = useState("");
+  const [bookedSeats, setBookedSeats] = useState([]);
 
   function normalize(val: string) {
     return val?.toString().trim().toLowerCase();
@@ -50,17 +50,24 @@ export default function BookingForm({ bus, date, source, destination }: any) {
       : 0;
 
   const totalPrice = price * selectedSeats.length;
+  useEffect(()=>{
+    fetchSeats();
+  },[])
+  async function fetchSeats() {
+    try {
+      const res = await checkSeatAvailability(
+        {
+          busId: bus._id,
+          startStop: source,
+          endStop: destination,
+        },
+        date
+      );
 
-   async function fetchSeats() {
-        try {
-            const res = await fetch(
-            "http://localhost:5000/api/v1/user/seatAvailability?busId="+ bus._id +"&travelDate=" + date + "&startStop=" + source + "&endStop=" + destination
-            );
-            const data = await res.json();
-            setBookedSeats(data.bookedSeats || []);
-        } catch (err) {
-            console.error(err);
-        }
+      setBookedSeats(Array.isArray(res.bookedSeats) ? res.bookedSeats : []);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function handleSendOtp() {

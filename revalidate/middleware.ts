@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
      
     const authPages = ["/track-ticket/login", "/track-ticket/otp"];
     const isAuthPage = authPages.includes(pathname);
-    console.log(token);
+    
     if (token) {
       try {
         const res = await fetch("http://localhost:5000/api/v1/user/verify-token", {
