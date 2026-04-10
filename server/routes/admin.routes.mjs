@@ -15,4 +15,6 @@ export default function admin_routes(apiRouter,){
     apiRouter.get("/bus/:id",verifyAdminToken,controller.GetBusByID);
     apiRouter.get("/dashboard",verifyAdminToken,controller.GetDashboard);
     apiRouter.get("/bookings",verifyAdminToken,controller.GetAllBookings);
+    apiRouter.get("/cities",verifyAdminToken,controller.getCities);
+    apiRouter.get("/points/:cityId",verifyAdminToken,controller.getPointsByCity);
 }

@@ -16,6 +16,7 @@ export default function AddBus() {
   const [form, setForm] = useState<any>({
     busName: "",
     busNumber: "",
+    route: [], 
     source: "",
     destination: "",
     intermediateStops: "",
@@ -29,6 +30,45 @@ export default function AddBus() {
   });
 
   const [error, setError] = useState("");
+  const [cities, setCities] = useState([]);
+  const [pointsMap, setPointsMap] = useState({}); // cityId -> points[]
+
+  const handleCitySelect = async (type, cityId) => {
+    const city = cities.find(c => c._id === cityId);
+
+    // fetch points if not already
+    if (!pointsMap[cityId]) {
+      const res = await fetch(`/api/points/${cityId}`);
+      const data = await res.json();
+
+      setPointsMap(prev => ({
+        ...prev,
+        [cityId]: data
+      }));
+    }
+
+    let updatedRoute = [...form.route];
+
+    if (type === "source") {
+      updatedRoute[0] = {
+        cityId,
+        cityName: city.name,
+        pickupPoints: [],
+        dropPoints: []
+      };
+    }
+
+    if (type === "destination") {
+      updatedRoute[updatedRoute.length - 1] = {
+        cityId,
+        cityName: city.name,
+        pickupPoints: [],
+        dropPoints: []
+      };
+    }
+
+    setForm({ ...form, route: updatedRoute });
+  };
 
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -63,6 +103,24 @@ export default function AddBus() {
       ...form,
       specificDates: form.specificDates.filter((d: string) => d !== date),
     });
+  };
+
+  const togglePickup = (index, point) => {
+    const updated = [...form.route];
+
+    const exists = updated[index].pickupPoints.find(p => p.pointId === point._id);
+
+    if (exists) {
+      updated[index].pickupPoints =
+        updated[index].pickupPoints.filter(p => p.pointId !== point._id);
+    } else {
+      updated[index].pickupPoints.push({
+        pointId: point._id,
+        name: point.name
+      });
+    }
+
+    setForm({ ...form, route: updated });
   };
 
   const handleSubmit = async () => {
@@ -111,24 +169,43 @@ export default function AddBus() {
       <h3 className="section-title">Route Details</h3>
 
       <div className="grid-3">
-        <div className="form-group">
-          <label>Source</label>
-          <input name="source" value={form.source} onChange={handleChange} />
-        </div>
 
         <div className="form-group">
+          <label>Source</label>
+          {/* <input name="source" value={form.source} onChange={handleChange} /> */}
+          <select onChange={(e) => handleCitySelect("source", e.target.value)}>
+            <option value="">Select City</option>
+            {cities.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+       
+        <div className="form-group">
           <label>Stops</label>
-          <input
+          {/* <input
             name="intermediateStops"
             placeholder="Nadiad, Vadodara"
             value={form.intermediateStops}
             onChange={handleChange}
-          />
+          /> */}
+          <select onChange={(e) => handleCitySelect("intermediateStops", e.target.value)}>
+            <option value="">Select City</option>
+            {cities.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
           <label>Destination</label>
-          <input name="destination" value={form.destination} onChange={handleChange} />
+          <select onChange={(e) => handleCitySelect("destination", e.target.value)}>
+            <option value="">Select City</option>
+            {cities.map(c => (
+              <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+          {/* <input name="destination" value={form.destination} onChange={handleChange} /> */}
         </div>
       </div>
 

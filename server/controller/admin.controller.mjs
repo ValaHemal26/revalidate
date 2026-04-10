@@ -199,3 +199,19 @@ export async function GetBusByID (req, res)  {
     });
   }
 }
+
+export async function getCities(req, res) {
+  const cities = await City.find().select("_id name").sort({ name: 1 });
+  res.json(cities);
+}
+
+// GET /api/points/:cityId
+export async function getPointsByCity(req, res) {
+  const { cityId } = req.params;
+
+  const points = await Point.find({ cityId })
+    .select("_id name fullName")
+    .sort({ name: 1 });
+
+  res.json(points);
+}

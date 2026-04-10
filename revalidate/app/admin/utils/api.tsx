@@ -135,3 +135,22 @@ export async function updateBus (id: string, payload: any,token) {
 
   return data;
 }
+
+export async function getPointById(id,token) {
+  try{
+    const res = await fetch(API_URl + "/points/" + id,{
+      headers:{
+        'Authorization': "Bearer " + token
+      }
+    });
+    if(!res.ok){
+      throw new Error( await res.json().error.message);
+    }
+    return await res.json();
+  }catch(err){
+    return {
+      success: false,
+      err,
+    }
+  }
+}
