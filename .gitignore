@@ -10,7 +10,7 @@ node_modules/
 # Next.js build folders
 .next/
 out/
-
+bkp/
 # Logs
 *.log
 

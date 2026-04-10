@@ -16,7 +16,26 @@ const busSchema = new mongoose.Schema({
     required: true,
     validate: [arr => arr.length >= 2, "At least 2 stops required"]
   },
+  route: [
+    {
+      cityId: { type: mongoose.Schema.Types.ObjectId, ref: "City" },
+      cityName: String,
 
+      pickupPoints: [
+        {
+          pointId: { type: mongoose.Schema.Types.ObjectId, ref: "Point" },
+          name: String
+        }
+      ],
+
+      dropPoints: [
+        {
+          pointId: { type: mongoose.Schema.Types.ObjectId, ref: "Point" },
+          name: String
+        }
+      ]
+    }
+  ],
   departureTime: {
     type: String,
     required: true

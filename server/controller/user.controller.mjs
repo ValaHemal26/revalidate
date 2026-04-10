@@ -3,6 +3,8 @@ import Bus from "../models/bus.js";
 import Booking from "../models/booking.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import City from "../models/city.js";
+import Point from "../models/point.js";
 
 export async function SearchBuses (req, res)  {
   try {
@@ -392,6 +394,23 @@ export async function GetAllBuses (req, res){
     });
   }
 }
+//https://www.redbus.in/seowapi/search-autocomplete?q=baroda&cc=IND&lang=EN&v=1775038776058&opId=15544
+
+//https://www.redbus.in/rpw/api/citySuggestion?search=baroda&limit=10&cityId=1121&routeDetection=false
+// export async function GetPaytmAllBuses (req, res){
+//   try {
+//     const response = await fetch("https://travel.paytm.com/bus/v2/cities/mahuva?isH5=true&is_phonetic=true&language=en&locale=en-US");
+//     const data = await response.json();
+//     res.status(200).json(data);
+
+
+//   } catch (error) {
+//     res.status(500).json({
+//       message: "Failed to fetch buses",
+//       error: error.message
+//     });
+//   }
+// }
 
 export async function TrackTicketSendOTP (req, res) {
   try {
@@ -698,5 +717,218 @@ export async function GetMyBookings(req, res) {
       success: false,
       message: "Server error"
     });
+  }
+}
+const city_URL =
+  "https://api.kosontechnology.com/country-state-city.php?country=IN&state=GJ&city=all";
+
+
+const gujaratTalukas = [
+  "Lakhpat","Rapar","Bhachau","Anjar","Bhuj","Nakhatrana","Abdasa","Mandvi","Mundra","Gandhidham",
+
+  "Vav","Tharad","Dhanera","Dantiwada","Amirgadh","Danta","Vadgam","Palanpur","Deesa","Deodar","Bhabhar","Kankrej",
+
+  "Santalpur","Radhanpur","Sidhpur","Patan","Harij","Sami","Chanasma",
+
+  "Satlasana","Kheralu","Unjha","Visnagar","Vadnagar","Vijapur","Mehsana","Becharaji","Kadi",
+
+  "Khedbrahma","Vijaynagar","Vadali","Idar","Bhiloda","Meghraj","Himatnagar","Prantij","Talod","Modasa","Dhansura","Malpur","Bayad",
+
+  "Kalol","Mansa","Gandhinagar","Dehgam",
+
+  "Mandal","Detroj-Rampura","Viramgam","Sanand","Ahmedabad City","Daskroi","Dholka","Bavla","Ranpur","Barwala","Dhandhuka",
+
+  "Halvad","Dhrangadhra","Dasada","Lakhtar","Wadhwan","Muli","Chotila","Sayla","Chuda","Limbdi",
+
+  "Maliya","Morbi","Tankara","Wankaner","Paddhari","Rajkot","Lodhika","Kotda Sangani","Jasdan","Gondal","Jamkandorna","Upleta","Dhoraji","Jetpur",
+
+  "Okhamandal","Khambhalia","Jamnagar","Jodiya","Dhrol","Kalavad","Lalpur","Kalyanpur","Bhanvad","Jamjodhpur",
+
+  "Porbandar","Ranavav","Kutiyana",
+
+  "Manavadar","Vanthali","Junagadh","Bhesan","Visavadar","Mendarda","Keshod","Mangrol","Malia","Talala","Patan-Veraval","Sutrapada","Kodinar","Una",
+
+  "Kunkavav Vadia","Babra","Lathi","Lilia","Amreli","Bagasara","Dhari","Savar Kundla","Khambha","Jafrabad","Rajula",
+
+  "Botad","Vallabhipur","Gadhada","Umrala","Bhavnagar","Ghogha","Sihor","Gariadhar","Palitana","Talaja","Mahuva",
+
+  "Tarapur","Sojitra","Umreth","Anand","Petlad","Khambhat","Borsad","Anklav",
+
+  "Kapadvanj","Virpur","Balasinor","Kathlal","Mehmedabad","Kheda","Matar","Nadiad","Mahudha","Thasra",
+
+  "Khanpur","Kadana","Santrampur","Lunawada","Shehera","Morwa (Hadaf)","Godhra","Kalol","Ghoghamba","Halol","Jambughoda",
+
+  "Fatepura","Jhalod","Limkheda","Dahod","Garbada","Devgadbaria","Dhanpur",
+
+  "Savli","Vadodara","Vaghodia","Jetpur Pavi","Chhota Udaipur","Kavant","Nasvadi","Sankheda","Dabhoi","Padra","Karjan","Sinor",
+
+  "Tilakwada","Nandod","Dediapada","Sagbara",
+
+  "Jambusar","Amod","Vagra","Bharuch","Jhagadia","Ankleshwar","Hansot","Valia",
+
+  "The Dangs",
+
+  "Navsari","Jalalpore","Gandevi","Chikhli","Bansda",
+
+  "Valsad","Dharampur","Pardi","Kaprada","Umbergaon",
+
+  "Olpad","Mangrol","Umarpada","Mandvi","Kamrej","Surat City","Choryasi","Palsana","Bardoli","Mahuva",
+
+  "Nizar","Uchchhal","Songadh","Vyara","Valod"
+];
+export async function syncAllCities() {
+  try {
+    console.log("🚀 Starting city sync...");
+
+    // const res = await fetch(city_URL);
+    // const cities = await res.json();
+    const cities = gujaratTalukas;
+
+    if (!Array.isArray(cities)) {
+      console.log("Invalid city response");
+      return;
+    }
+
+    for (const city of cities) {
+      // const cityName = city;
+      // const cityName = city.name;
+      console.log(city);
+      try {
+        // await syncCityData(cityName);
+       const res = await syncCityData(city);
+
+        // optional delay to avoid rate limit
+        await new Promise((r) => setTimeout(r, 500));
+        console.log(res);
+      } catch (err) {
+        console.log("Error syncing city:", cityName, err.message);
+      }
+    }
+
+    console.log("✅ All cities sync completed");
+  } catch (err) {
+    console.log("❌ Sync failed:", err.message);
+  }
+}
+
+function normalize(name) {
+  return name
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "") 
+    .replace(/,/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+const REDBUS_URL =
+  "https://www.redbus.in/rpw/api/citySuggestion?search=";
+async function syncCityData(cityName) {
+  try {
+    const res = await fetch(REDBUS_URL + encodeURIComponent(cityName));
+    const data = await res.json();
+    const docs =  data?.response?.docs || [];
+    const cityIds = await City.find({}, { redbusCityId: 1 }).lean();
+
+    const cityIdSet = new Set(cityIds.map(c => c.redbusCityId));
+    for (const doc of docs) {
+      // ❗ ONLY GUJARAT
+      // if (doc.region !== "Gujarat") continue;
+      const isGujaratRegion = doc.region === "Gujarat";
+      const isEmptyRegion = !doc.region || doc.region.trim() === "";
+
+      if (!isGujaratRegion && !(isEmptyRegion && cityIdSet.has(doc.parentLocation))) {
+        continue;
+      }
+
+      // =========================
+      // 1. HANDLE CITY
+      // =========================
+      if (doc.locationType === "CITY") {
+        const city = await City.findOneAndUpdate(
+          { redbusCityId: doc.ID },
+          {
+            redbusCityId: doc.ID,
+            name: doc.Name,
+            normalizedName: normalize(doc.Name),
+            state: "GJ",
+          },
+          { upsert: true, returnDocument: "after" }
+        );
+
+        // =========================
+        // 2. HANDLE BP LIST
+        // =========================
+        if (Array.isArray(doc.BpList)) {
+          for (const bp of doc.BpList) {
+            await Point.findOneAndUpdate(
+              { redbusPointId: bp.ID },
+              {
+                redbusPointId: bp.ID,
+                redbusCityId: doc.ID,
+                cityId: city._id,
+                name: bp.locationName,
+                fullName: bp.Name,
+              },
+              { upsert: true, returnDocument: "after" }
+            );
+          }
+        }
+      }
+
+      // =========================
+      // 3. HANDLE AREA TYPE (IMPORTANT)
+      // =========================
+      if (doc.locationType === "AREA" && doc.region === "Gujarat") {
+        const city = await City.findOne({
+          redbusCityId: doc.parentLocation,
+        });
+        console.log(city);
+        // if (!city) continue;
+        if (!city) {
+          console.log("❌ No city found for parentLocation:", doc.parentLocation);
+          continue;
+        }
+
+        console.log("✅ Matched City:", city.name, "| ID:", city._id);
+        await Point.findOneAndUpdate(
+          { redbusPointId: doc.ID },
+          {
+            redbusPointId: doc.ID,
+            redbusCityId: doc.parentLocation,
+            cityId: city._id,
+            name: doc.locationName,
+            fullName: doc.Name,
+          },
+          { upsert: true, returnDocument: "after" }
+        );
+      }
+
+      if (
+        doc.locationType === "AREA" &&
+        (!doc.region || doc.region.trim() === "")
+      ) {
+        const city = await City.findOne({
+          redbusCityId: doc.parentLocation,
+        });
+
+        if (!city) continue;
+
+        await Point.findOneAndUpdate(
+          { redbusPointId: doc.ID },
+          {
+            redbusPointId: doc.ID,
+            redbusCityId: doc.parentLocation,
+            cityId: city._id,
+            name: doc.locationName,
+            fullName: doc.Name,
+          },
+          { upsert: true }
+        );
+      }
+    }
+
+    return { success: true,message:"Data Sync Successfully for " + cityName };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: err.message };
   }
 }

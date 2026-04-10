@@ -14,7 +14,7 @@ export async function adminLogin(email: string, password: string) {
 }
 
 export async function fetchDashboard(token) {
-
+console.log(token);
   if(!token) throw new Error ("Please Provide Authentication Token");
   const res = await fetch(`${API_URl}/dashboard`,{
       method: 'GET',

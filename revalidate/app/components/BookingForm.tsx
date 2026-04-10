@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import ErrorMessage from "../components/ErrorMessage";
 import { LoaderModal } from "../components/LoaderModal";
 import SeatLayout from "../components/SeatLayout";
-import { sendOtp, verifyOtp, bookSeat,checkSeatAvailability } from "../utils/api";
+import { sendOtp, verifyOtp, bookSeat,checkSeatAvailability, getPaytmbus } from "../utils/api";
 
 export default function BookingForm({ bus, date, source, destination }: any) {
   const [step, setStep] = useState(1);
@@ -13,6 +13,12 @@ export default function BookingForm({ bus, date, source, destination }: any) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+
+  const [contactDetails,setContactDetails] = useState({
+    name:"",
+    email:"",
+    phone:"",
+  })
 
   const [otp, setOtp] = useState("");
   const [otpVerified, setOtpVerified] = useState(false);
@@ -71,7 +77,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
   }
 
   async function handleSendOtp() {
-    if (!name || !email || !phone) {
+    if (!contactDetails.name || !contactDetails.email || !contactDetails.phone) {
       return setError("Fill all details");
     }
 
@@ -79,8 +85,8 @@ export default function BookingForm({ bus, date, source, destination }: any) {
     setLoadingMessage("We've sent an OTP to your email. Please enter it to proceed.");
 
     try {
-      const res = await sendOtp(email, {
-        name,
+      const res = await sendOtp(contactDetails.email, {
+        name: contactDetails.name,
         source,
         destination,
         date,
@@ -109,7 +115,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
     setLoadingMessage("Verifying OTP...");
     await new Promise(resolve => setTimeout(resolve, 3000));
     try {
-      const res = await verifyOtp(email, otp);
+      const res = await verifyOtp(contactDetails.email, otp);
 
       if (!res?.success) {
         return setError(res?.data?.message || "Invalid OTP");
@@ -131,9 +137,9 @@ export default function BookingForm({ bus, date, source, destination }: any) {
     try {
       for (const seat of selectedSeats) {
         const res = await bookSeat({
-          name,
-          email,
-          phone,
+          name: contactDetails.name,
+          email: contactDetails.email,
+          phone: contactDetails.phone,
           busId: bus._id,
           startStop: source,
           endStop: destination,
@@ -173,7 +179,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
         setStep(1);
         return setError("Please select seats first");
       }
-      if (!name || !email || !phone) {
+      if (!contactDetails.name || !contactDetails.email || !contactDetails.phone) {
         setStep(2);
         return setError("Please fill passenger details first");
       }
@@ -185,7 +191,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
         setStep(1);
         return setError("Please select seats first");
       }
-      if (!name || !email || !phone) {
+      if (!contactDetails.name || !contactDetails.email || !contactDetails.phone) {
         setStep(2);
         return setError("Please fill passenger details first");
       }
@@ -199,7 +205,7 @@ export default function BookingForm({ bus, date, source, destination }: any) {
         setStep(1);
         return setError("Please select seats first");
       }
-      if (!name || !email || !phone) {
+      if (!contactDetails.name || !contactDetails.email || !contactDetails.phone) {
         setStep(2);
         return setError("Please fill passenger details first");
       }
@@ -256,13 +262,28 @@ export default function BookingForm({ bus, date, source, destination }: any) {
 
       {step === 2 && (
         <>
-          <input placeholder="Name" value={name ? name : ""} onChange={(e) => setName(e.target.value)} />
-          <input placeholder="Email" value={email ? email : ""}  onChange={(e) => setEmail(e.target.value)} />
-          <input placeholder="Phone" value={phone ? phone : ""}  onChange={(e) => setPhone(e.target.value)} />
+          <input placeholder="Name" value={contactDetails.name ? contactDetails.name : ""} onChange={(e) =>
+            setContactDetails((prev) => ({
+              ...prev,
+              name: e.target.value,
+            }))
+          }/>
+          <input placeholder="Email" value={contactDetails.email ? contactDetails.email : ""}  onChange={(e) =>
+              setContactDetails((prev) => ({
+                ...prev,
+                email: e.target.value,
+              }))
+            } />
+          <input placeholder="Phone" value={contactDetails.phone ? contactDetails.phone : ""}   onChange={(e) =>
+            setContactDetails((prev) => ({
+              ...prev,
+              phone: e.target.value,
+            }))
+          } />
           <div className="button-wrapper">
             <button onClick={handleBack}>Back</button>
             <button onClick={() =>{
-              if (!name || !email || !phone) {
+              if (!contactDetails.name || !contactDetails.email || !contactDetails.phone) {
                 return setError("Please fill passenger details first");
               }
               setStep(3);
@@ -275,9 +296,9 @@ export default function BookingForm({ bus, date, source, destination }: any) {
       {step === 3 && (
         <>
           <h3>Summary</h3>
-          <p>{name}</p>
-          <p>{email}</p>
-          <p>{phone}</p>
+          <p>{contactDetails.name}</p>
+          <p>{contactDetails.email}</p>
+          <p>{contactDetails.phone}</p>
           <p>Seats: {selectedSeats.join(", ")}</p>
           <p>Total: {totalPrice}</p>
           <div className="button-wrapper">
@@ -310,8 +331,8 @@ export default function BookingForm({ bus, date, source, destination }: any) {
       {step === 5 && (
         <div className="success-box">
           <h2>{success}</h2>
-          <p>{name}</p>
-          <p>{email}</p>
+          <p>{contactDetails.name}</p>
+          <p>{contactDetails.email}</p>
           <p>{source} → {destination}</p>
           <p>Seats: {selectedSeats.join(", ")}</p>
         </div>

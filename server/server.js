@@ -5,6 +5,7 @@ const app = express();
 const dotenv = require("dotenv");
 const { default : admin_routes} = require( "./routes/admin.routes.mjs");
 const {default : user_routes} = require ("./routes/user.routes.mjs"); 
+const {syncAllCities} = require("./controller/user.controller.mjs");
 
 dotenv.config();
 app.use(cors({
@@ -31,4 +32,8 @@ app.use("/api/v1/user", apiUserRouter);
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");
+
+  //  setTimeout(() => {
+  //   syncAllCities();
+  // }, 3000);
 });

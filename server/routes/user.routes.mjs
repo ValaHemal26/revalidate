@@ -11,7 +11,7 @@ export default function user_routes(apiRouter){
     apiRouter.post("/refresh-token",controller.GenerateNewAccessToken);
     apiRouter.post("/cancel-booking",verifyToken,controller.CancelTicket);
     apiRouter.post("/update-booking",verifyToken,controller.UpdateBooking);
-
+    
     apiRouter.get("/my-bookings", verifyToken, controller.GetMyBookings);
     apiRouter.get("/verify-token",controller.verifyUserToken);
     apiRouter.get("/search-buses",controller.SearchBuses);
