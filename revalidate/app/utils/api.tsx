@@ -272,3 +272,55 @@ export async function cancelBooking(token, bookingId) {
 
   return data;
 }
+
+// ==================== LOCATION/CITIES/POINTS ====================
+const LOCATION_API = "http://localhost:5000/api/v1/locations";
+
+export async function fetchAllCities() {
+  try {
+    const res = await fetch(`${LOCATION_API}/cities`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error("Failed to fetch cities");
+    return await res.json();
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function searchCities(query: string) {
+  try {
+    const res = await fetch(`${LOCATION_API}/cities?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error("Failed to search cities");
+    return await res.json();
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function fetchCitiesWithPoints() {
+  try {
+    const res = await fetch(`${LOCATION_API}/cities-with-points`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error("Failed to fetch cities with points");
+    return await res.json();
+  } catch (error: any) {
+    throw error;
+  }
+}
+
+export async function fetchPointsByCity(cityId: string) {
+  try {
+    if (!cityId) throw new Error("City ID is required");
+    const res = await fetch(`${LOCATION_API}/cities/${cityId}/points`, {
+      method: "GET",
+    });
+    if (!res.ok) throw new Error("Failed to fetch points");
+    return await res.json();
+  } catch (error: any) {
+    throw error;
+  }
+}

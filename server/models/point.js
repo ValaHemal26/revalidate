@@ -8,27 +8,28 @@ const pointSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
-
     redbusCityId: {
       type: Number,
       index: true,
     },
-
     cityId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "City",
       required: true,
       index: true,
     },
-
     name: {
       type: String,
       required: true,
     },
-
     fullName: {
       type: String,
     },
+    status: {
+      type: String,
+      enum: ["APPROVED", "PENDING", "REJECTED"],
+      default: "APPROVED"
+    }
   },
   { timestamps: true }
 );

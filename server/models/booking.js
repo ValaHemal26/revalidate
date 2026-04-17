@@ -4,6 +4,8 @@ const bookingSchema = new mongoose.Schema({
   name: String,
   email: String,
   phone: String,
+  
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
 
   busId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -19,10 +21,19 @@ const bookingSchema = new mongoose.Schema({
 
   price: Number,
 
+  verificationCode: String,
+  verificationCodeExpires: Date,
+
+  paymentStatus: {
+    type: String,
+    enum: ["Pending", "Paid", "Refunded"],
+    default: "Pending"
+  },
+
   status: {
     type: String,
-    enum: ["Booked", "Cancelled"],
-    default: "Booked"
+    enum: ["PendingVerification", "Booked", "Cancelled"],
+    default: "PendingVerification"
   }
 }, { timestamps: true });
 

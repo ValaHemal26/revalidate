@@ -11,9 +11,14 @@ node_modules/
 .next/
 out/
 bkp/
+bus-booking-mern/
+arena/
 # Logs
 *.log
 
 # OS files
 .DS_Store
 Thumbs.db
+app.zip
+bus-booking-mern.zip
+arena.zip

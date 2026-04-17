@@ -1,217 +1,392 @@
-import Admin from "../models/admin.js";
-import Booking  from "../models/booking.js";
 import Bus from "../models/bus.js";
-import jwt from "jsonwebtoken";
+import Booking from "../models/booking.js";
+import User from "../models/user.js";
+import City from "../models/city.js";
+import Point from "../models/point.js";
 
-export async function  AdminLogin(req, res)  {
+// ==================== DASHBOARD ====================
+export async function AdminDashboard(req, res) {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+    // Check if admin
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
     }
 
-    const admin = await Admin.findOne({ email, password });
+    const totalBuses = await Bus.countDocuments();
+    const activeBuses = await Bus.countDocuments({ isActive: true });
+    const totalBookings = await Booking.countDocuments();
 
-    if (!admin) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    
-    const token = jwt.sign({ userId: admin._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: '1h',
+    const bookedBookings = await Booking.find({
+      status: { $in: ["Booked", "confirmed", "Verified"] },
     });
-    res.json({ message: "Login successful", admin,token   });
-
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-}
-
-
-export async function AddBus(req, res)  {
-  try {
-    const data = req.body;
-
-    // basic validation
-    if (!data.busName || !data.busNumber || !data.routeStops) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    const bus = new Bus(data);
-    await bus.save();
-
-    res.status(201).json({
-      message: "Bus added successfully",
-      bus
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to add bus",
-      error: error.message
-    });
-  }
-}
-
-export  async function EditBus (req, res)  {
-  try {
-    const bus = await Bus.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
+    const totalRevenue = bookedBookings.reduce(
+      (sum, b) => sum + (b.price || 0),
+      0,
     );
+
+    const pendingBookings = await Booking.countDocuments({
+      status: { $in: ["PendingVerification", "pending"] },
+    });
+    const cancelledBookings = await Booking.countDocuments({
+      status: "Cancelled",
+    });
+
+    res.status(200).json({
+      totalBuses,
+      activeBuses,
+      totalBookings,
+      totalRevenue,
+      pendingBookings,
+      cancelledBookings,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// ==================== BUSES - ADMIN VIEW ====================
+export async function AdminGetAllBuses(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const buses = await Bus.find()
+      .populate("operatorId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(buses);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminGetBusById(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const bus = await Bus.findById(req.params.id).populate(
+      "operatorId",
+      "name email",
+    );
+    if (!bus) {
+      return res.status(404).json({ message: "Bus not found" });
+    }
+
+    res.status(200).json(bus);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminCreateBus(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const newBus = new Bus({
+      ...req.body,
+      operatorId: req.user.id,
+      isActive: true,
+    });
+
+    await newBus.save();
+    res.status(201).json(newBus);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminUpdateBus(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const bus = await Bus.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
 
     if (!bus) {
       return res.status(404).json({ message: "Bus not found" });
     }
 
-    res.json({
-      message: "Bus updated",
-      bus
-    });
-
+    res.status(200).json(bus);
   } catch (error) {
-    res.status(500).json({
-      message: "Update failed",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 }
 
-export async function DeleteBus (req, res)  {
+export async function AdminDeleteBus(req, res) {
   try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
     const bus = await Bus.findByIdAndDelete(req.params.id);
 
     if (!bus) {
       return res.status(404).json({ message: "Bus not found" });
     }
 
-    res.json({ message: "Bus deleted successfully" });
-
+    res.status(200).json({ message: "Bus deleted successfully" });
   } catch (error) {
-    res.status(500).json({
-      message: "Delete failed",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 }
 
-export async function GetAllBuses (req, res)  {
+// ==================== BOOKINGS - ADMIN VIEW ====================
+export async function AdminGetAllBookings(req, res) {
   try {
-    const buses = await Bus.find().sort({ createdAt: -1 });
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
 
-    res.json(buses);
+    const bookings = await Booking.find()
+      .populate("busId", "busName busNumber")
+      .sort({ createdAt: -1 });
 
+    res.status(200).json(bookings);
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch buses",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 }
 
-export async function GetDashboard (req, res) {
+export async function AdminCancelBooking(req, res) {
   try {
-    const totalBuses = await Bus.countDocuments();
-    const totalBookings = await Booking.countDocuments();
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
 
-    const revenueData = await Booking.aggregate([
-      { $match: { status: "Booked" } },
-      { $group: { _id: null, total: { $sum: "$price" } } }
-    ]);
-
-    const revenue = revenueData[0]?.total || 0;
-
-    const today = new Date().toISOString().split("T")[0];
-
-    const todayBookings = await Booking.countDocuments({
-      travelDate: today
-    });
-
-    res.json({
-      totalBuses,
-      totalBookings,
-      revenue,
-      todayBookings
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Dashboard error",
-      error: error.message
-    });
-  }
-}
-
-export  async function GetAllBookings (req, res) {
-  try {
-    
-    const bookings = await Booking.find().sort({ createdAt: -1 });
-
-    res.json(bookings);
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch bookings",
-      error: error.message
-    });
-  }
-}
-
-export  async function CancelBooking (req, res)  {
-  try {
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
       { status: "Cancelled" },
-      { new: true }
+      { new: true },
     );
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    res.json({
-      message: "Booking cancelled",
-      booking
-    });
-
+    res.status(200).json(booking);
   } catch (error) {
-    res.status(500).json({
-      message: "Cancel failed",
-      error: error.message
-    });
+    res.status(500).json({ message: error.message });
   }
 }
 
-export async function GetBusByID (req, res)  {
+// ==================== USERS / OPERATORS MANAGEMENT ====================
+export async function AdminGetAllOperators(req, res) {
   try {
-    const bus = await Bus.findById(req.params.id);
-
-    if (!bus) {
-      return res.status(404).json({ message: "Bus not found" });
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
     }
 
-    res.json(bus);
+    const operators = await User.find({ role: "OPERATOR" })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(operators);
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch bus",
-      error: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 }
 
-export async function getCities(req, res) {
-  const cities = await City.find().select("_id name").sort({ name: 1 });
-  res.json(cities);
+export async function AdminGetAllUsers(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const users = await User.find().select("-password").sort({ createdAt: -1 });
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 }
 
-// GET /api/points/:cityId
-export async function getPointsByCity(req, res) {
-  const { cityId } = req.params;
+export async function AdminApproveOperator(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
 
-  const points = await Point.find({ cityId })
-    .select("_id name fullName")
-    .sort({ name: 1 });
+    const { action } = req.body; // "approve" or "reject"
 
-  res.json(points);
+    if (action === "approve") {
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { isActive: true },
+        { new: true },
+      ).select("-password");
+
+      res.status(200).json({ message: "Operator approved", user });
+    } else if (action === "reject") {
+      const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { isActive: false },
+        { new: true },
+      ).select("-password");
+
+      res.status(200).json({ message: "Operator rejected", user });
+    } else {
+      res
+        .status(400)
+        .json({ message: "Invalid action. Use 'approve' or 'reject'" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminBlockUser(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true },
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User blocked", user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminUnblockUser(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { isActive: true },
+      { new: true },
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User unblocked", user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// ==================== ADMIN PROFILE ====================
+export async function AdminGetProfile(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    console.log("Admin ID from token:", req.user.userId); // Debugging line
+    const admin = await User.findById(req.user.userId).select("-password");
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.status(200).json(admin);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminUpdateProfile(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+    console.log("Admin ID from token:", req.user); // Debugging line
+    const { name, email, phone } = req.body;
+
+    const admin = await User.findByIdAndUpdate(
+      req.user.userId,
+      { name, email, phone },
+      { new: true },
+    ).select("-password");
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.status(200).json({ message: "Profile updated", admin });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// ==================== PENDING LOCATIONS (Operator Requests) ====================
+export async function AdminGetPendingLocations(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const pendingCities = await City.find({ status: "PENDING" }).sort({
+      createdAt: -1,
+    });
+
+    const pendingPoints = await Point.find({ status: "PENDING" }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      pendingCities,
+      pendingPoints,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export async function AdminApproveLoc(req, res) {
+  try {
+    if (req.user.role !== "ADMIN") {
+      return res.status(403).json({ message: "Access denied. Admin only." });
+    }
+
+    const { type, action } = req.body; // type: "city" or "point", action: "approve" or "reject"
+    const { id } = req.params;
+
+    let document;
+
+    if (type === "city") {
+      document = await City.findByIdAndUpdate(
+        id,
+        { status: action === "approve" ? "APPROVED" : "REJECTED" },
+        { new: true },
+      );
+    } else if (type === "point") {
+      document = await Point.findByIdAndUpdate(
+        id,
+        { status: action === "approve" ? "APPROVED" : "REJECTED" },
+        { new: true },
+      );
+    } else {
+      return res.status(400).json({ message: "Invalid type" });
+    }
+
+    if (!document) {
+      return res.status(404).json({ message: `${type} not found` });
+    }
+
+    res.status(200).json({ message: `${type} ${action}d`, document });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 }

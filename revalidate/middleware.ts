@@ -92,21 +92,21 @@ export async function middleware(request: NextRequest) {
   }
   
 
-  if (pathname.startsWith("/admin")) {
-    const isAdminAuthPage = pathname === "/admin/login";
+  // if (pathname.startsWith("/admin")) {
+  //   const isAdminAuthPage = pathname === "/admin/login";
 
-    if (admin && isAdminAuthPage) {
-      return NextResponse.redirect(
-        new URL("/admin/dashboard", request.url)
-      );
-    }
+  //   if (admin && isAdminAuthPage) {
+  //     return NextResponse.redirect(
+  //       new URL("/admin/dashboard", request.url)
+  //     );
+  //   }
 
-    if (!admin && !isAdminAuthPage) {
-      return NextResponse.redirect(
-        new URL("/admin/login", request.url)
-      );
-    }
-  }
+  //   if (!admin && !isAdminAuthPage) {
+  //     return NextResponse.redirect(
+  //       new URL("/admin/login", request.url)
+  //     );
+  //   }
+  // }
 
   const response = NextResponse.next();
   response.headers.set("x-pathname", pathname);
@@ -115,5 +115,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/track-ticket/:path*", "/admin/:path*"],
+  matcher: ["/track-ticket/:path*"],
 };

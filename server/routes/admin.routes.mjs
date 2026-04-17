@@ -1,20 +1,56 @@
-import * as controller from "../controller/admin.controller.mjs";
-import { verifyAdminToken } from "../helper.js";
+import express from "express";
+import {
+  AdminDashboard,
+  AdminGetAllBuses,
+  AdminGetBusById,
+  AdminCreateBus,
+  AdminUpdateBus,
+  AdminDeleteBus,
+  AdminGetAllBookings,
+  AdminCancelBooking,
+  AdminGetAllOperators,
+  AdminGetAllUsers,
+  AdminApproveOperator,
+  AdminBlockUser,
+  AdminUnblockUser,
+  AdminGetProfile,
+  AdminUpdateProfile,
+  AdminGetPendingLocations,
+  AdminApproveLoc,
+} from "../controller/admin.controller.mjs";
+import { verifyToken, requireRole } from "../middleware/auth.middleware.mjs";
 
-export default function admin_routes(apiRouter,){
+const adminMiddleware = [verifyToken, requireRole(["ADMIN"])];
 
-    apiRouter.post("/login",controller.AdminLogin);
-    apiRouter.post("/addbus",verifyAdminToken,controller.AddBus);
+export default function adminRoutes(router) {
+  // Dashboard
+  router.get("/admin/dashboard", adminMiddleware, AdminDashboard);
 
-    apiRouter.put("/editBus/:id",verifyAdminToken,controller.EditBus);
-    apiRouter.put("/cancelBooking/:id",verifyAdminToken,controller.CancelBooking);
+  // Bus Management
+  router.get("/admin/buses", adminMiddleware, AdminGetAllBuses);
+  router.get("/admin/buses/:id", adminMiddleware, AdminGetBusById);
+  router.post("/admin/buses", adminMiddleware, AdminCreateBus);
+  router.put("/admin/buses/:id", adminMiddleware, AdminUpdateBus);
+  router.delete("/admin/buses/:id", adminMiddleware, AdminDeleteBus);
 
-    apiRouter.delete("/deleteBus/:id",verifyAdminToken,controller.DeleteBus);
+  // Booking Management
+  router.get("/admin/bookings", adminMiddleware, AdminGetAllBookings);
+  router.put("/admin/bookings/:id/cancel", adminMiddleware, AdminCancelBooking);
 
-    apiRouter.get("/buses",verifyAdminToken,controller.GetAllBuses);
-    apiRouter.get("/bus/:id",verifyAdminToken,controller.GetBusByID);
-    apiRouter.get("/dashboard",verifyAdminToken,controller.GetDashboard);
-    apiRouter.get("/bookings",verifyAdminToken,controller.GetAllBookings);
-    apiRouter.get("/cities",verifyAdminToken,controller.getCities);
-    apiRouter.get("/points/:cityId",verifyAdminToken,controller.getPointsByCity);
+  // Operator Management
+  router.get("/admin/operators", adminMiddleware, AdminGetAllOperators);
+  router.put("/admin/operators/:id/approve", adminMiddleware, AdminApproveOperator);
+
+  // User Management
+  router.get("/admin/users", adminMiddleware, AdminGetAllUsers);
+  router.put("/admin/users/:id/block", adminMiddleware, AdminBlockUser);
+  router.put("/admin/users/:id/unblock", adminMiddleware, AdminUnblockUser);
+
+  // Admin Profile
+  router.get("/admin/profile", adminMiddleware, AdminGetProfile);
+  router.put("/admin/profile", adminMiddleware, AdminUpdateProfile);
+
+  // Location Requests
+  router.get("/admin/pending-locations", adminMiddleware, AdminGetPendingLocations);
+  router.post("/admin/locations/:id/approve", adminMiddleware, AdminApproveLoc);
 }

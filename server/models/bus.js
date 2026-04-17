@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const busSchema = new mongoose.Schema({
+  operatorId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
   busName: {
     type: String,
     required: true
@@ -9,6 +10,19 @@ const busSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true
+  },
+  busType: {
+    type: String,
+    enum: ["AC", "Non-AC", "Sleeper", "Seater"],
+    default: "Seater"
+  },
+  amenities: {
+    type: [String],
+    default: []
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
 
   routeStops: {
@@ -49,6 +63,11 @@ const busSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 1
+  },
+  
+  seatLayout: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
   },
 
   basePrice: {
